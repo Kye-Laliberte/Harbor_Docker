@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: harbor-postgres
+    environment:
+      POSTGRES_USER: harbor_user
+      POSTGRES_PASSWORD: harbor_password
+      POSTGRES_DB: harbor_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - harbor_data:/var/lib/postgresql/data
+
+volumes:
+  harbor_data:
