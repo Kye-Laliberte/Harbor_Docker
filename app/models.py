@@ -36,14 +36,13 @@ class Docking(Base):
     __tablename__ = 'dockings'
     __table_args__ = (
         CheckConstraint('departure_date IS NULL OR departure_date >= arrival_date', name='check_departure_after_arrival'),
-        Enum('ship_clearance_status_enum', 'pending', 'approved', 'denied', name='ship_clearance_status_enum')
     )
 
     id = Column(Integer, primary_key=True, index=True)
     ship_id = Column(Integer, ForeignKey('ships.id'), nullable=False)
     dock_id = Column(Integer, ForeignKey('docks.id'), nullable=False)
     arrival_date = Column(DateTime, default=datetime.utcnow, nullable=False)
-    departure_date = Column(DateTime, CheckConstraint('departure_date IS NULL OR departure_date >= arrival_date'), nullable=True)
+    departure_date = Column(DateTime, nullable=True)
     ship_clearance_status = Column(Enum('pending', 'approved', 'denied', name='ship_clearance_status_enum'), default='pending', nullable=False)
     purpose = Column(String(200), nullable=True)
 
@@ -54,5 +53,5 @@ class Harbor(Base):
     __tablename__ = 'harbors'
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
-    harbor_status = Column(Enum('active', 'inactive', name='harbor_status_enum'),default='active', nullable=False)
+    harbor_status = Column(Enum('active', 'inactive', name='harbor_status_enum'),default='inactive', nullable=False)
     dock_count = Column(Integer, CheckConstraint('dock_count >= 0'), default=0, nullable=False)

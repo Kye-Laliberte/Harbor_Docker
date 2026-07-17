@@ -26,7 +26,7 @@ CREATE TABLE if NOT EXISTS Dock(
 CREATE TABLE if NOT EXISTS Harbor(
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    harbor_status status DEFAULT 'active' CHECK (harbor_status IN ('active', 'inactive'))
+    harbor_status status DEFAULT 'inactive' CHECK (harbor_status IN ('active', 'inactive'))
 );
 
 CREATE TABLE Docking(
