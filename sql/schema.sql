@@ -1,12 +1,12 @@
-CREATE TABLE if NOT EXISTS Captain(
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    experience_years INTEGER CHECK(experience_years >= 0) DEFAULT 0
-);
+--CREATE TABLE if NOT EXISTS captains(
+--    id SERIAL PRIMARY KEY,
+--    name TEXT NOT NULL,
+--    experience_years INTEGER CHECK(experience_years >= 0) DEFAULT 0
+--);
 
-CREATE TABLE if NOT EXISTS Ship(
+CREATE TABLE if NOT EXISTS ships(
     id SERIAL PRIMARY KEY,
-    captain_id INTEGER  REFERENCES Captain(id),
+--    captain_id INTEGER  REFERENCES Captain(id),
     ship_status status DEFAULT 'docked' CHECK (ship_status IN ('docked', 'sailing', 'maintenance')),
     ship_name Text DEFAULT 'Unknown Ship',
     current_cargo INTEGER NOT NULL CHECK (current_cargo >= 0),
@@ -14,7 +14,7 @@ CREATE TABLE if NOT EXISTS Ship(
     cargo_capacity INTEGER NOT NULL CHECK (cargo_capacity >= 0)
 );
 
-CREATE TABLE if NOT EXISTS Dock(
+CREATE TABLE if NOT EXISTS dock(
     id SERIAL PRIMARY KEY,
     dock_code INTEGER UNIQUE NOT NULL,
     dock_status status DEFAULT 'active' CHECK (dock_status IN ('active', 'inactive', 'maintenance')),
@@ -23,10 +23,10 @@ CREATE TABLE if NOT EXISTS Dock(
     cargo_capacity INTEGER NOT NULL CHECK (cargo_capacity >= 0)
 );
 
-CREATE TABLE if NOT EXISTS Harbor(
+CREATE TABLE if NOT EXISTS harbors(
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    harbor_status status DEFAULT 'inactive' CHECK (harbor_status IN ('active', 'inactive'))
+    harbor_status status DEFAULT 'inactive' CHECK (harbor_status IN ('active', 'inactive')),
 );
 
 CREATE TABLE Docking(

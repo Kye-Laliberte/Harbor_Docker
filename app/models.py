@@ -14,17 +14,17 @@ class  Dock(Base):
     harbor = relationship("Harbor", back_populates="docks")
     cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0'), nullable=False)
 
-class Captain(Base):
-    __tablename__ = 'captains'
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), default='Unknown Captain', nullable=False)
-    experience_years = Column(Integer, CheckConstraint('experience_years >= 0'), default=0, nullable=False)
+#class Captain(Base):
+#    __tablename__ = 'captains'
+#    id = Column(Integer, primary_key=True, index=True)
+#    name = Column(String(100), default='Unknown Captain', nullable=False)
+#    experience_years = Column(Integer, CheckConstraint('experience_years >= 0'), default=0, nullable=False)
 
 class Ship(Base):
     __tablename__ = 'ships'
     id = Column(Integer, primary_key=True, index=True)
     ship_name = Column(String(100), default='Unknown Ship', nullable=False)
-    captain_id = Column(Integer, ForeignKey('captains.id'), nullable=False)
+    #captain_id = Column(Integer, ForeignKey('captains.id'), nullable=False)
     cargo_size = Column(Integer, CheckConstraint('cargo_size >= 0'), nullable=False)
     registration_number = Column(String(100), unique=True, nullable=False)
     ship_status = Column(Enum('docked', 'sailing', 'maintenance', name='ship_status_enum'), default='docked', nullable=False)
