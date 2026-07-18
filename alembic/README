@@ -1,1 +1,44 @@
-Generic single-database configuration.
+Harbor Docker
+
+Harbor Docker is a backend project built with FastAPI, SQLAlchemy, Alembic, PostgreSQL, and Docker. The project focuses on database design,
+ ORM modeling, Docker constraints and REST API development rather than frontend development.
+
+Current Features
+Dockerized PostgreSQL database
+SQLAlchemy ORM models
+Alembic database migrations
+Harbor management schema including:
+Captains
+Ships
+Harbors
+Docks
+Docking records
+PostgreSQL constraints, relationships, and enums
+
+Planned Features
+REST API endpoints with FastAPI
+CRUD operations for all entities
+Pydantic request and response schemas
+Business logic for ship docking and harbor operations
+Validation and error handling
+Dockerized API service with Docker Compose
+
+Tech Stack
+Python 3.12
+FastAPI
+SQLAlchemy
+Alembic
+PostgreSQL
+Docker
+Project Goals
+
+This project is intended to strengthen backend development skills by focusing on:
+
+Relational database design
+SQLAlchemy ORM
+Database migrations with Alembic
+Docker-based development
+REST API architecture
+Clean backend project structure
+
+This project will funcon as a ship gide showing captens where ships can go based on cargo time 

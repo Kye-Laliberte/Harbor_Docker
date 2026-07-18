@@ -26,10 +26,21 @@ CREATE TABLE if NOT EXISTS dock(
 CREATE TABLE if NOT EXISTS harbors(
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    harbor_status status DEFAULT 'inactive' CHECK (harbor_status IN ('active', 'inactive')),
+    harbor_status status DEFAULT 'inactive' CHECK (harbor_status IN ('active', 'inactive'))
 );
 
-CREATE TABLE Docking(
+CREATE TABLE if NOT EXISTS voyage(
+   id SERIAL PRIMARY KEY,
+   ship_id INTEGER NOT NULL REFERENCES Ship(id),
+   departure_harbor_id INTEGER NOT NULL REFERENCES Harbor(id),
+   destination_harbor_id INTEGER NOT NULL REFERENCES Harbor(id) CHECK( destination_harbor_id <> departure_harbor_id),
+   departure_time TIMESTAMP,
+   estimated_arrival TIMESTAMP,
+   actual_arrival TIMESTAMP,
+   travel_status TEXT NOT NULL CHECK (travel_status IN ('scheduled','departed','arrived','cancelled'))
+);
+
+CREATE TABLE if NOT EXISTS dockings(
     id SERIAL PRIMARY KEY,
     ship_id INTEGER REFERENCES Ship(id),
     dock_id INTEGER REFERENCES Dock(id),
