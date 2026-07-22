@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, CheckConstraint, Enum
+from sqlalchemy import Column, Integer, String,TIMESTAMP, DateTime, ForeignKey, CheckConstraint, Enum
 from  sqlalchemy.orm import backref, relationship, declarative_base
 from datetime import datetime
 from app.database import Base
@@ -56,12 +56,15 @@ class Harbor(Base):
     __tablename__ = 'harbors'
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
-    harbor_status = Column(Enum('active', 'inactive', name='harbor_status_enum'),default='inactive', nullable=False)
-    dock_count = Column(Integer, CheckConstraint('dock_count >= 0'), default=0, nullable=False)
+    timezone = Column(TIMESTAMP(timezone=True), nullable=False)
+    #harbor_status = Column(Enum('active', 'inactive', name='harbor_status_enum'),default='inactive', nullable=False)
+    
 
 class Voyage(Base):
     __tablename__ = 'voyage'
-    
+    __table_args__ =(
+        CheckConstraint('arrival_date IS NULL OR departure_date >= arrival_date', name='ck_arival_order_check')
+    )
     id = Column(Integer, primary_key=True, index=True)
     ship_id = Column(Integer, ForeignKey('ships.id'), nullable= False)
     departure_date = Column(TIMESTAMP(timezone=True), nullable=False)
@@ -73,4 +76,7 @@ class Voyage(Base):
     departure_harbor_id = Column(Integer, ForeignKey(Harbor.id),nullable=False)
     destination_harbor_id = Column(Integer,ForeignKey(Harbor.id),nullable=True)
 
+
+    Ship = relationship("Ship", backref="voyage")
+    harbor = relationship("Harbor", backref="voyage")
 
