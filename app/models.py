@@ -8,12 +8,12 @@ class  Dock(Base):
     __tablename__ = 'docks'
     id = Column(Integer, primary_key=True, index=True)
     dock_code = Column(Integer, unique=True, nullable=False)
-    port_name = Column(String(100), nullable=False)
+    dock_name = Column(String(100), nullable=False) # changed 
     harbor_id = Column(Integer, ForeignKey('harbors.id'), nullable=False)
     dock_status = Column(Enum('active', 'inactive', 'maintenance', name='dock_status_enum'), default='active', nullable=False)
     harbor = relationship("Harbor", back_populates="docks")
-    cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0'), nullable=False)
-
+    cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name='dock_minimum_cargo'), nullable=False)
+    
 #class Captain(Base):
 #    __tablename__ = 'captains'
 #    id = Column(Integer, primary_key=True, index=True)
@@ -22,15 +22,18 @@ class  Dock(Base):
 
 class Ship(Base):
     __tablename__ = 'ships'
+    __table_args__ =(
+        CheckConstraint('curent_cargo IS NULL OR cargo_capacity >= current_cargo', name='ck_available_cargo'),
+    )
     id = Column(Integer, primary_key=True, index=True)
     ship_name = Column(String(100), default='Unknown Ship', nullable=False)
     #captain_id = Column(Integer, ForeignKey('captains.id'), nullable=False)
-    cargo_size = Column(Integer, CheckConstraint('cargo_size >= 0'), nullable=False)
+    current_cargo = Column(Integer, CheckConstraint('current_cargo >= 0', name='ck_ship_current_cargo'), default=0, nullable=False)
     registration_number = Column(String(100), unique=True, nullable=False)
     ship_status = Column(Enum('docked', 'sailing', 'maintenance', name='ship_status_enum'), default='docked', nullable=False)
-    captain = relationship("Captain", backref="ships")
-    cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0'), nullable=False)
-    total_cargo = Column(Integer, CheckConstraint('total_cargo >= 0'), nullable=False)
+    #captain = relationship("Captain", backref="ships")
+    cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name= 'ck_ship_cargo_capacity'), nullable=False)
+
 
 class Docking(Base):
     __tablename__ = 'dockings'
