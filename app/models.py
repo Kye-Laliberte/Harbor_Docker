@@ -37,14 +37,14 @@ class Ship(Base):
 
 class Docking(Base):
     __tablename__ = 'dockings'
-    __table_args__ = (
-        CheckConstraint('departure_date IS NULL OR departure_date >= arrival_date', name='check_departure_after_arrival'),
+    __table_args__ =(
+        CheckConstraint('departure_date IS NULL OR departure_date >= arrival_date', name='ck_departure_after_arrival'),
     )
 
     id = Column(Integer, primary_key=True, index=True)
     ship_id = Column(Integer, ForeignKey('ships.id'), nullable=False)
     dock_id = Column(Integer, ForeignKey('docks.id'), nullable=False)
-    arrival_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    arrival_date = Column(DateTime, nullable=False)
     departure_date = Column(DateTime, nullable=True)
     ship_clearance_status = Column(Enum('pending', 'approved', 'denied', name='ship_clearance_status_enum'), default='pending', nullable=False)
     purpose = Column(String(200), nullable=True)
@@ -58,3 +58,19 @@ class Harbor(Base):
     name = Column(String(100), nullable=False)
     harbor_status = Column(Enum('active', 'inactive', name='harbor_status_enum'),default='inactive', nullable=False)
     dock_count = Column(Integer, CheckConstraint('dock_count >= 0'), default=0, nullable=False)
+
+class Voyage(Base):
+    __tablename__ = 'voyage'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    ship_id = Column(Integer, ForeignKey('Ships.id'), nullable= False)
+    departure_time = Column(DateTime(timezone=True), nullable=False)
+    estimated_arrival =Column(DateTime(timezone=True))
+    arrival_time =Column(DateTime(timezone=True))
+
+    travel_status = Column(Enum('scheduled', 'departed','arrived','cancelled'))
+    
+    departure_harbor_id = Column(Integer, ForeignKey(Harbor.id),nullable=False)
+    destination_harbor_id = Column(Integer,ForeignKey(Harbor.id),nullable=True)
+
+
