@@ -1,4 +1,4 @@
-"""removed captain tabel
+"""removed captain_id from ship.
 
 Revision ID: 47a723c3899f
 Revises: 08d98f49d131
@@ -19,7 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Upgrade schema."""
+    """captain_id from ship."""
    
     # Remove FK to captains
     op.drop_constraint(

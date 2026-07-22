@@ -32,7 +32,6 @@ def upgrade() -> None:
     op.create_table('harbors',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
-    sa.Column('harbor_status', sa.Enum('active', 'inactive', name='harbor_status_enum'), nullable=False),
     sa.Column('dock_count', sa.Integer(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
@@ -54,12 +53,12 @@ def upgrade() -> None:
     op.create_index(op.f('ix_docks_id'), 'docks', ['id'], unique=False)
     op.create_table('ships',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('ship_name', sa.String(length=100), nullable=False),
+    sa.Column('ship_name', sa.String(length=100), default="Unknown Ship", nullable=False),
     sa.Column('captain_id', sa.Integer(), nullable=False),
     sa.Column('registration_number', sa.String(length=100), nullable=False),
     sa.Column('ship_status', sa.Enum('docked', 'sailing', 'maintenance', name='ship_status_enum'), nullable=False),
     sa.Column('cargo_capacity', sa.Integer(), nullable=False),
-    sa.Column('total_cargo', sa.Integer(), nullable=False),
+    sa.Column('current_cargo', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['captain_id'], ['captains.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('registration_number')
@@ -69,8 +68,8 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('ship_id', sa.Integer(), nullable=False),
     sa.Column('dock_id', sa.Integer(), nullable=False),
-    sa.Column('arrival_date', sa.DateTime(), nullable=False),
-    sa.Column('departure_date', sa.DateTime(), nullable=True),
+    sa.Column('arrival_date', sa.TIMESTAMP(), nullable=False),
+    sa.Column('departure_date', sa.TIMESTAMP(), nullable=True),
     sa.Column('ship_clearance_status', sa.Enum('pending', 'approved', 'denied', name='ship_clearance_status_enum'), nullable=False),
     sa.Column('purpose', sa.String(length=200), nullable=True),
     sa.CheckConstraint('departure_date IS NULL OR departure_date >= arrival_date', name='check_departure_after_arrival'),
