@@ -44,8 +44,8 @@ class Docking(Base):
     id = Column(Integer, primary_key=True, index=True)
     ship_id = Column(Integer, ForeignKey('ships.id'), nullable=False)
     dock_id = Column(Integer, ForeignKey('docks.id'), nullable=False)
-    arrival_date = Column(DateTime, nullable=False)
-    departure_date = Column(DateTime, nullable=True)
+    arrival_date = Column(TIMESTAMP, nullable=False)
+    departure_date = Column(TIMESTAMP, nullable=True)
     ship_clearance_status = Column(Enum('pending', 'approved', 'denied', name='ship_clearance_status_enum'), default='pending', nullable=False)
     purpose = Column(String(200), nullable=True)
 
@@ -63,10 +63,10 @@ class Voyage(Base):
     __tablename__ = 'voyage'
     
     id = Column(Integer, primary_key=True, index=True)
-    ship_id = Column(Integer, ForeignKey('Ships.id'), nullable= False)
-    departure_time = Column(DateTime(timezone=True), nullable=False)
-    estimated_arrival =Column(DateTime(timezone=True))
-    arrival_time =Column(DateTime(timezone=True))
+    ship_id = Column(Integer, ForeignKey('ships.id'), nullable= False)
+    departure_date = Column(TIMESTAMP(timezone=True), nullable=False)
+    estimated_arrival =Column(TIMESTAMP(timezone=True))
+    arrival_date =Column(TIMESTAMP(timezone=True), nullable=True)
 
     travel_status = Column(Enum('scheduled', 'departed','arrived','cancelled'))
     
