@@ -27,7 +27,7 @@ def upgrade() -> None:
     sa.Column('departure_time', sa.DateTime(timezone=True), nullable=False),
     sa.Column('estimated_arrival', sa.DateTime(timezone=True), nullable=True),
     sa.Column('arrival_time', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('travel_status', sa.Enum('scheduled', 'departed', 'arrived', 'cancelled'), nullable=True),
+    sa.Column('travel_status', sa.Enum('scheduled', 'departed', 'arrived', 'cancelled',name='voyage_status'), nullable=True),
     sa.Column('departure_harbor_id', sa.Integer(), nullable=False),
     sa.Column('destination_harbor_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['departure_harbor_id'], ['harbors.id'], ),

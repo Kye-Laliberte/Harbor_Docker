@@ -63,7 +63,7 @@ class Harbor(Base):
 class Voyage(Base):
     __tablename__ = 'voyage'
     __table_args__ =(
-        CheckConstraint('arrival_date IS NULL OR departure_date >= arrival_date', name='ck_arival_order_check')
+        CheckConstraint('arrival_date IS NULL OR departure_date >= arrival_date', name='ck_arival_order_check'),
     )
     id = Column(Integer, primary_key=True, index=True)
     ship_id = Column(Integer, ForeignKey('ships.id'), nullable= False)
@@ -71,7 +71,7 @@ class Voyage(Base):
     estimated_arrival =Column(TIMESTAMP(timezone=True))
     arrival_date =Column(TIMESTAMP(timezone=True), nullable=True)
 
-    travel_status = Column(Enum('scheduled', 'departed','arrived','cancelled'))
+    travel_status = Column(Enum('scheduled', 'departed','arrived','cancelled', name='voyage_status'))
     
     departure_harbor_id = Column(Integer, ForeignKey(Harbor.id),nullable=False)
     destination_harbor_id = Column(Integer,ForeignKey(Harbor.id),nullable=True)
