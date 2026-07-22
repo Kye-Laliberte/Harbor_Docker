@@ -63,7 +63,7 @@ class Harbor(Base):
 class Voyage(Base):
     __tablename__ = 'voyage'
     __table_args__ =(
-        CheckConstraint('arrival_date IS NULL OR departure_date >= arrival_date', name='ck_arival_order_check'),
+        CheckConstraint('departure_date >= estimated_arrival', name='ck_arival_order_check'),
     )
     id = Column(Integer, primary_key=True, index=True)
     ship_id = Column(Integer, ForeignKey('ships.id'), nullable= False)
