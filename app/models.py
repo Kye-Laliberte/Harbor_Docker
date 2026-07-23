@@ -13,6 +13,7 @@ class  Dock(Base):
     dock_status = Column(Enum('active', 'inactive', 'maintenance', name='dock_status_enum'), default='active', nullable=False)
     harbor = relationship("Harbor", back_populates="docks")
     cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name='ck_dock_minimum_cargo'), nullable=False)
+    dock_size = Column(Enum('small','medium','large', name='vessel_size_enum'), nullable=False)
     
 #class Captain(Base):
 #    __tablename__ = 'captains'
@@ -33,7 +34,7 @@ class Ship(Base):
     ship_status = Column(Enum('docked', 'sailing', 'maintenance', name='ship_status_enum'), default='docked', nullable=False)
     #captain = relationship("Captain", backref="ships")
     cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name= 'ck_ship_cargo_capacity'), nullable=False)
-
+    ship_size = Column(Enum('small','medium','large',name='vessel_size_enum'), nullable=False)
 
 class Docking(Base):
     __tablename__ = 'dockings'

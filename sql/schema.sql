@@ -14,6 +14,7 @@ CREATE TABLE if NOT EXISTS ships(
     current_cargo INTEGER NOT NULL CHECK (current_cargo >= 0),
     registration_number TEXT UNIQUE NOT NULL,
     cargo_capacity INTEGER NOT NULL CHECK (cargo_capacity >= 0),
+    ship_size TEXT NOT NULL CHECK (ship_size IN ('small','medium','large'))
     CHECK(curent_cargo <= cargo_capacity)
 );
 
@@ -43,7 +44,8 @@ CREATE TABLE if NOT EXISTS docks(
     dock_status STATUS NOT NULL DEFAULT 'active' CHECK (dock_status IN ('active', 'inactive', 'maintenance')),
     harbor_id INTEGER REFERENCES Harbor(id),
     dock_name TEXT NOT NULL,
-    cargo_capacity INTEGER NOT NULL CHECK (cargo_capacity >= 0)
+    cargo_capacity INTEGER NOT NULL CHECK (cargo_capacity >= 0),
+    dock_size INTEGER NOT NULL CHECK (dock_size IN ('small','medium','large'))
 );
 
 CREATE TABLE if NOT EXISTS dockings(
