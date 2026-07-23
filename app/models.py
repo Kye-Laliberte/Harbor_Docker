@@ -64,7 +64,7 @@ class Harbor(Base):
 class Voyage(Base):
     __tablename__ = 'voyage'
     __table_args__ =(
-        CheckConstraint('departure_date >= estimated_arrival', name='ck_arival_order_check'),
+        CheckConstraint('departure_date <= estimated_arrival', name='ck_arival_order_check'),
     )
     id = Column(Integer, primary_key=True, index=True)
     ship_id = Column(Integer, ForeignKey('ships.id'), nullable= False)
@@ -74,8 +74,8 @@ class Voyage(Base):
 
     travel_status = Column(Enum('scheduled', 'departed','arrived','cancelled', name='voyage_status'))
     
-    departure_harbor_id = Column(Integer, ForeignKey(Harbor.id),nullable=False)
-    destination_harbor_id = Column(Integer,ForeignKey(Harbor.id),nullable=True)
+    departure_harbor_id = Column(Integer, ForeignKey('harbor.id'),nullable=False)
+    destination_harbor_id = Column(Integer,ForeignKey('harbor.id'),nullable=True)
 
 
     Ship = relationship("Ship", backref="voyage")
