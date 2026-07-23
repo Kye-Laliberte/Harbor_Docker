@@ -12,7 +12,7 @@ class  Dock(Base):
     harbor_id = Column(Integer, ForeignKey('harbors.id'), nullable=False)
     dock_status = Column(Enum('active', 'inactive', 'maintenance', name='dock_status_enum'), default='active', nullable=False)
     harbor = relationship("Harbor", back_populates="docks")
-    cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name='dock_minimum_cargo'), nullable=False)
+    cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name='ck_dock_minimum_cargo'), nullable=False)
     
 #class Captain(Base):
 #    __tablename__ = 'captains'
