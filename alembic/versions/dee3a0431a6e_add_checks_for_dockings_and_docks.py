@@ -26,16 +26,11 @@ def upgrade() -> None:
            "docks",
            "cargo_capacity >= 0",
        )
-    op.create_check_constraint(
-        "ck_departure_after_arrival",
-        "dockings",
-        'departure_date IS NULL OR departure_date >= arrival_date'
-    )
 
     op.create_check_constraint(
         'ck_arival_order_check',
         'voyage',
-        'departure_date >= estimated_arrival'
+        'departure_date <= estimated_arrival'
     )
     # ### end Alembic commands ###
 
