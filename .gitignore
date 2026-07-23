@@ -3,7 +3,10 @@
 __pycache__/
 *.py[cod]
 
-venv/
+
 env/
 
 tests/
+
+
+.git
