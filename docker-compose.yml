@@ -11,5 +11,15 @@ services:
     volumes:
       - harbor_data:/var/lib/postgresql/data
 
+  api:
+    build: .
+    container_name: harbor-api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://harbor_user:harbor_password@postgres:5432/harbor_db
+    depends_on:
+      - postgres
+
 volumes:
   harbor_data:
