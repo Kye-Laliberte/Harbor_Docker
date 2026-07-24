@@ -74,8 +74,8 @@ class Voyage(Base):
 
     travel_status = Column(Enum('scheduled', 'departed','arrived','cancelled', name='voyage_status'))
     
-    departure_harbor_id = Column(Integer, ForeignKey('harbor.id'),nullable=False)
-    destination_harbor_id = Column(Integer,ForeignKey('harbor.id'),nullable=True)
+    departure_harbor_id = Column(Integer, ForeignKey('harbors.id'),nullable=False)
+    destination_harbor_id = Column(Integer,ForeignKey('harbors.id'),nullable=True)
 
 
     Ship = relationship("Ship", backref="voyage")
