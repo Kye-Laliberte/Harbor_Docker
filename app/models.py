@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String,TIMESTAMP, DateTime, ForeignKey, CheckConstraint, Enum
+from sqlalchemy import Column, Integer, String, TIMESTAMP, DateTime, ForeignKey, CheckConstraint, Enum as SQLEnum
 from  sqlalchemy.orm import backref, relationship, declarative_base
 from datetime import datetime
 from app.database import Base
+from app.enums import DockStatus, VesselSize, ShipStatus, ShipClearanceStatus, VoyageStatus
 
 
 class  Dock(Base):
@@ -10,10 +11,10 @@ class  Dock(Base):
     dock_code = Column(Integer, unique=True, nullable=False)
     dock_name = Column(String(100), nullable=False) # changed 
     harbor_id = Column(Integer, ForeignKey('harbors.id'), nullable=False)
-    dock_status = Column(Enum('active', 'inactive', 'maintenance', name='dock_status_enum'), default='active', nullable=False)
+    dock_status = Column(SQLEnum(DockStatus, name='dock_status_enum', native_enum=True), default=DockStatus.ACTIVE, nullable=False)
     harbor = relationship("Harbor", back_populates="docks")
     cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name='ck_dock_minimum_cargo'), nullable=False)
-    dock_size = Column(Enum('small','medium','large', name='vessel_size_enum'), nullable=False)
+    dock_size = Column(SQLEnum(VesselSize, name='vessel_size_enum', native_enum=True), nullable=False)
     
 #class Captain(Base):
 #    __tablename__ = 'captains'
@@ -24,17 +25,17 @@ class  Dock(Base):
 class Ship(Base):
     __tablename__ = 'ships'
     __table_args__ =(
-        CheckConstraint('curent_cargo IS NULL OR cargo_capacity >= current_cargo', name='ck_available_cargo'),
+            CheckConstraint('current_cargo IS NULL OR cargo_capacity >= current_cargo', name='ck_available_cargo'),
     )
     id = Column(Integer, primary_key=True, index=True)
     ship_name = Column(String(100), default='Unknown Ship', nullable=False)
     #captain_id = Column(Integer, ForeignKey('captains.id'), nullable=False)
     current_cargo = Column(Integer, CheckConstraint('current_cargo >= 0', name='ck_ship_current_cargo'), default=0, nullable=False)
     registration_number = Column(String(100), unique=True, nullable=False)
-    ship_status = Column(Enum('docked', 'sailing', 'maintenance', name='ship_status_enum'), default='docked', nullable=False)
+    ship_status = Column(SQLEnum(ShipStatus, name='ship_status_enum', native_enum=True), default=ShipStatus.DOCKED, nullable=False)
     #captain = relationship("Captain", backref="ships")
     cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name= 'ck_ship_cargo_capacity'), nullable=False)
-    ship_size = Column(Enum('small','medium','large',name='vessel_size_enum'), nullable=False)
+    ship_size = Column(SQLEnum(VesselSize, name='vessel_size_enum', native_enum=True), nullable=False)
 
 class Docking(Base):
     __tablename__ = 'dockings'
@@ -47,7 +48,7 @@ class Docking(Base):
     dock_id = Column(Integer, ForeignKey('docks.id'), nullable=False)
     arrival_date = Column(TIMESTAMP, nullable=False)
     departure_date = Column(TIMESTAMP, nullable=True)
-    ship_clearance_status = Column(Enum('pending', 'approved', 'denied', name='ship_clearance_status_enum'), default='pending', nullable=False)
+    ship_clearance_status = Column(SQLEnum(ShipClearanceStatus, name='ship_clearance_status_enum', native_enum=True), default=ShipClearanceStatus.PENDING, nullable=False)
     purpose = Column(String(200), nullable=True)
 
     ship = relationship("Ship", backref="dockings")
@@ -72,7 +73,7 @@ class Voyage(Base):
     estimated_arrival =Column(TIMESTAMP(timezone=True))
     arrival_date =Column(TIMESTAMP(timezone=True), nullable=True)
 
-    travel_status = Column(Enum('scheduled', 'departed','arrived','cancelled', name='voyage_status'))
+    travel_status = Column(SQLEnum(VoyageStatus, name='voyage_status', native_enum=True), default=VoyageStatus.SCHEDULED, nullable=False)
     
     departure_harbor_id = Column(Integer, ForeignKey('harbors.id'),nullable=False)
     destination_harbor_id = Column(Integer,ForeignKey('harbors.id'),nullable=True)
