@@ -6,6 +6,10 @@ from datetime import datetime
 class HarborBase(BaseModel):
     name: str
     timezone: datetime
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        return value.strip().lower()
 
 class HarborRead(HarborBase):
     id: int
@@ -67,14 +71,7 @@ class ShipUpdate(BaseModel):
                 raise ValueError("current_cargo cannot exceed cargo_capacity")
         return self
 
-    """@root_validator
-    def check_cargo_vs_capacity(cls, values):
-        current = values.get("current_cargo")
-        capacity = values.get("cargo_capacity")
-        if current is not None and capacity is not None:
-            if current > capacity:
-                raise ValueError("current_cargo cannot exceed cargo_capacity")
-        return values"""
+
 
 
 class ShipOut(ShipBase):
