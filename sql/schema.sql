@@ -4,19 +4,25 @@
 --    experience_years INTEGER CHECK(experience_years >= 0) DEFAULT 0
 --);
 
+-- Enum type definitions
+CREATE TYPE IF NOT EXISTS dock_status_enum AS ENUM ('active', 'inactive', 'maintenance');
+CREATE TYPE IF NOT EXISTS vessel_size_enum AS ENUM ('small', 'medium', 'large');
+CREATE TYPE IF NOT EXISTS ship_status_enum AS ENUM ('docked', 'sailing', 'maintenance');
+CREATE TYPE IF NOT EXISTS ship_clearance_status_enum AS ENUM ('pending', 'approved', 'denied');
+CREATE TYPE IF NOT EXISTS voyage_status AS ENUM ('scheduled', 'departed', 'arrived', 'cancelled');
 
 
 CREATE TABLE if NOT EXISTS ships(
     id SERIAL PRIMARY KEY,
 --    captain_id INTEGER  REFERENCES Captain(id),
-    ship_status STATUS  CHECK (ship_status IN ('docked', 'sailing', 'maintenance')),
+    ship_status ship_status_enum, NOT NULL, DEFAULT ship_status_enum.docked,
     ship_name Text DEFAULT 'Unknown Ship',
     current_cargo INTEGER NOT NULL CHECK (current_cargo >= 0),
     registration_number TEXT UNIQUE NOT NULL,
     cargo_capacity INTEGER NOT NULL CHECK (cargo_capacity >= 0),
-    ship_size TEXT NOT NULL CHECK (ship_size IN ('small','medium','large'))--,
+    ship_size vessel_size_enum NOT NULL,
+    CHECK(current_cargo <= cargo_capacity)
     --current_harbor_id INTEGER REFERENCES (harbor.id) DEFAULT=NULL
-    CHECK(curent_cargo <= cargo_capacity)
 );
 
 
@@ -32,21 +38,21 @@ CREATE TABLE if NOT EXISTS voyage(
    ship_id INTEGER NOT NULL REFERENCES ships(id),
    departure_harbor_id INTEGER NOT NULL REFERENCES harbors(id),
    destination_harbor_id INTEGER REFERENCES harbors(id),
-   departure_time TIMESTAMP WITH TIME ZONE,
+   departure_date TIMESTAMP WITH TIME ZONE,
    estimated_arrival TIMESTAMP WITH TIME ZONE,
-   actual_arrival TIMESTAMP WITH TIME ZONE,
-   travel_status STATUS NOT NULL CHECK (travel_status IN ('scheduled','departed','arrived','cancelled'))
+   arrival_date TIMESTAMP WITH TIME ZONE,
+   travel_status voyage_status NOT NULL
     --CHECK( destination_harbor_id <> departure_harbor_id)
 );
 
 CREATE TABLE if NOT EXISTS docks(
     id SERIAL PRIMARY KEY,
     dock_code INTEGER UNIQUE NOT NULL,
-    dock_status STATUS NOT NULL DEFAULT 'active' CHECK (dock_status IN ('active', 'inactive', 'maintenance')),
+    dock_status dock_status_enum NOT NULL DEFAULT 'active',
     harbor_id INTEGER REFERENCES harbors(id),
     dock_name TEXT NOT NULL,
     cargo_capacity INTEGER NOT NULL CHECK (cargo_capacity >= 0),
-    dock_size INTEGER NOT NULL CHECK (dock_size IN ('small','medium','large'))
+    dock_size vessel_size_enum NOT NULL
 );
 
 CREATE TABLE if NOT EXISTS dockings(
@@ -56,6 +62,6 @@ CREATE TABLE if NOT EXISTS dockings(
     arrival_date TIMESTAMP NOT NULL,
     departure_date TIMESTAMP,
     purpose TEXT,
-    ship_clearance_status status DEFAULT 'pending' CHECK (ship_clearance_status IN ('pending', 'approved', 'denied')),
+    ship_clearance_status ship_clearance_status_enum DEFAULT 'pending',
     CHECK(departure_date IS NULL OR departure_date >= arrival_date)
 );
