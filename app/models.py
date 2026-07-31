@@ -16,6 +16,7 @@ class  Dock(Base):
     dock_size = Column(SQLEnum(VesselSize, name='vessel_size_enum', native_enum=True), nullable=False)
 
     harbor = relationship("Harbor", back_populates="docks")
+    dockings = relationship("Docking", back_populates="dock")
 #class Captain(Base):
 #    __tablename__ = 'captains'
 #    id = Column(Integer, primary_key=True, index=True)
@@ -37,6 +38,9 @@ class Ship(Base):
     cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name= 'ck_ship_cargo_capacity'), nullable=False)
     ship_size = Column(SQLEnum(VesselSize, name='vessel_size_enum', native_enum=True), nullable=False)
 
+    voyages = relationship("Voyage", back_populates="ship")
+    dockings = relationship("Docking", back_populates="ship")
+
 class Docking(Base):
     __tablename__ = 'dockings'
     __table_args__ =(
@@ -51,8 +55,8 @@ class Docking(Base):
     ship_clearance_status = Column(SQLEnum(ShipClearanceStatus, name='ship_clearance_status_enum', native_enum=True), default=ShipClearanceStatus.PENDING, nullable=False)
     purpose = Column(String(200), nullable=True)
 
-    ship = relationship("Ship", backref="dockings")
-    dock = relationship("Dock", backref="dockings")
+    ship = relationship("Ship", back_populates="dockings")
+    dock = relationship("Dock", back_populates="dockings")
 
 class Harbor(Base):
     __tablename__ = 'harbors'
@@ -61,6 +65,12 @@ class Harbor(Base):
     timezone = Column(TIMESTAMP(timezone=True), nullable=False)
 
     docks = relationship("Dock", back_populates="harbor")
+    departing_voyages = relationship("Voyage",
+    foreign_keys="Voyage.departure_harbor_id",
+    back_populates="departure_harbor")
+    arriving_voyages = relationship(
+    "Voyage",foreign_keys="Voyage.destination_harbor_id",
+    back_populates="destination_harbor")
     #harbor_status = Column(Enum('active', 'inactive', name='harbor_status_enum'),default='inactive', nullable=False)
     
 
@@ -80,6 +90,11 @@ class Voyage(Base):
     departure_harbor_id = Column(Integer, ForeignKey('harbors.id'),nullable=False)
     destination_harbor_id = Column(Integer,ForeignKey('harbors.id'),nullable=True)
 
+    ship = relationship("Ship", back_populates="voyages")
+    departure_harbor = relationship(
+    "Harbor", foreign_keys=[departure_harbor_id],
+    back_populates="departing_voyages")
 
-    ship = relationship("Ship", backref="voyages")
-
+    destination_harbor = relationship(
+    "Harbor", foreign_keys=[destination_harbor_id],
+    back_populates="arriving_voyages")
