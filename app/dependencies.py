@@ -7,5 +7,6 @@ def get_db():
     except Exception as e:
         db.rollback()
         logging.error(f"Error: {e}")
+        raise
     finally:
         db.close()

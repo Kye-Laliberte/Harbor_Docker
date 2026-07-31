@@ -12,10 +12,10 @@ class  Dock(Base):
     dock_name = Column(String(100), nullable=False) # changed 
     harbor_id = Column(Integer, ForeignKey('harbors.id'), nullable=False)
     dock_status = Column(SQLEnum(DockStatus, name='dock_status_enum', native_enum=True), default=DockStatus.ACTIVE, nullable=False)
-    harbor = relationship("Harbor", back_populates="docks")
     cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name='ck_dock_minimum_cargo'), nullable=False)
     dock_size = Column(SQLEnum(VesselSize, name='vessel_size_enum', native_enum=True), nullable=False)
-    
+
+    harbor = relationship("Harbor", back_populates="docks")
 #class Captain(Base):
 #    __tablename__ = 'captains'
 #    id = Column(Integer, primary_key=True, index=True)
@@ -59,6 +59,8 @@ class Harbor(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     timezone = Column(TIMESTAMP(timezone=True), nullable=False)
+
+    docks = relationship("Dock", back_populates="harbor")
     #harbor_status = Column(Enum('active', 'inactive', name='harbor_status_enum'),default='inactive', nullable=False)
     
 
@@ -79,6 +81,5 @@ class Voyage(Base):
     destination_harbor_id = Column(Integer,ForeignKey('harbors.id'),nullable=True)
 
 
-    Ship = relationship("Ship", backref="voyage")
-    harbor = relationship("Harbor", backref="voyage")
+    ship = relationship("Ship", backref="voyages")
 
