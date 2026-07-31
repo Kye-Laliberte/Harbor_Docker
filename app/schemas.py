@@ -16,8 +16,13 @@ class HarborRead(HarborBase):
     class Config:
         from_attributes = True
 
+
+class HarborUpdate(BaseModel):
+    name: Optional[str] = None
+    timezone: Optional[datetime] = None 
+
 class ShipBase(BaseModel):
-    ship_name: Optional[str] = "Unknown Ship"
+    ship_name: Optional[str] = "unknown ship"
     current_cargo: int = 0
     registration_number: str
     ship_status: Optional[enums.ShipStatus] = enums.ShipStatus.DOCKED
