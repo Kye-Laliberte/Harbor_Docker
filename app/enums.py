@@ -1,31 +1,31 @@
 ﻿from enum import Enum
 
 
-class DockStatus(Enum):
+class DockStatus(str, Enum):
     ACTIVE = 'active'
     INACTIVE = 'inactive'
     MAINTENANCE = 'maintenance'
 
 
-class VesselSize(Enum):
+class VesselSize(str, Enum):
     SMALL = 'small'
     MEDIUM = 'medium'
     LARGE = 'large'
 
 
-class ShipStatus(Enum):
+class ShipStatus(str, Enum):
     DOCKED = 'docked'
     SAILING = 'sailing'
     MAINTENANCE = 'maintenance'
 
 
-class ShipClearanceStatus(Enum):
+class ShipClearanceStatus(str, Enum):
     PENDING = 'pending'
     APPROVED = 'approved'
     DENIED = 'denied'
 
 
-class VoyageStatus(Enum):
+class VoyageStatus(str, Enum):
     SCHEDULED = 'scheduled'
     DEPARTED = 'departed'
     ARRIVED = 'arrived'
