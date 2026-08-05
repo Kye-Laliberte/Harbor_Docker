@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, TIMESTAMP, DateTime, ForeignKey, CheckConstraint, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, TIMESTAMP, DateTime, ForeignKey, CheckConstraint, Enum 
 from  sqlalchemy.orm import backref, relationship, declarative_base
 from datetime import datetime
 from app.database import Base
@@ -11,9 +11,9 @@ class  Dock(Base):
     dock_code = Column(Integer, unique=True, nullable=False)
     dock_name = Column(String(100), nullable=False) # changed 
     harbor_id = Column(Integer, ForeignKey('harbors.id'), nullable=False)
-    dock_status = Column(SQLEnum(DockStatus, name='dock_status_enum', native_enum=True), default=DockStatus.ACTIVE, nullable=False)
+    dock_status = Column(Enum(DockStatus,values_callable = lambda enm:[ e.value for e in enm ], name='dock_status_enum', native_enum=True), nullable=False)
     cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name='ck_dock_minimum_cargo'), nullable=False)
-    dock_size = Column(SQLEnum(VesselSize, name='vessel_size_enum', native_enum=True), nullable=False)
+    dock_size = Column(Enum(VesselSize,values_callable = lambda ennm:[ e.value for e in ennm ], name='vessel_size_enum', native_enum=True), nullable=False)
 
     harbor = relationship("Harbor", back_populates="docks")
     dockings = relationship("Docking", back_populates="dock")
