@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.schemas import DockRead,DockBase
+from app.schemas import DockRead,DockBase,DockUpdate
 from app.dependencies import get_db
 from app.models import Dock,Ship,Harbor
 
@@ -25,12 +25,10 @@ def create_dock(payload: DockBase, db: Session = Depends(get_db)):
     db.add(dock)
     db.commit() 
     db.refresh(dock)
-    return DockRead(id=dock.id,harbor_id=dock.harbor_id, dock_status=dock.dock_status,
-                    cargo_capacity=dock.cargo_capacity,dock_size=dock.cargo_capacity,
-                    dock_name=dock.dock_name,dock_code=dock.dock_name)
+    return dock
     
     
-@router.get("/{dock_id}", response_model=DockRead)
+@router.get("/{dock_id}/get", response_model=DockRead)
 def get_dock(dock_id: int, db: Session = Depends(get_db)):
     dock = db.query(Dock).filter(Dock.id == dock_id).first()
     if not dock:
@@ -38,3 +36,26 @@ def get_dock(dock_id: int, db: Session = Depends(get_db)):
     return dock
 
 
+@router.put("/{dock_id}/update", response_model=DockRead)
+def update_dock(dock_id: int, payload: DockUpdate, db: Session = Depends(get_db)):
+    dock = db.query(Dock).filter(Dock.id == dock_id).first()
+    if not dock:
+        raise HTTPException(status_code=404, detail="Dock not found")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(dock, field, value)
+
+    db.commit()
+    db.refresh(dock)
+    return dock
+
+
+@router.delete("/{dock_id}/delete", status_code=status.HTTP_204_NO_CONTENT)
+def delete_dock(dock_id: int, db: Session = Depends(get_db)):
+    dock = db.query(Dock).filter(Dock.id == dock_id).first()
+    if not dock:
+        raise HTTPException(status_code=404, detail="Dock not found")
+
+    db.delete(dock)
+    db.commit()
+    return None
