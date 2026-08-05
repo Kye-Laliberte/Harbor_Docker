@@ -1,5 +1,7 @@
+from email.policy import default
+
 import app.enums as enums 
-from pydantic import BaseModel, model_validator, root_validator, validator, Field
+from pydantic import BaseModel, model_validator, root_validator, validator, field_validator, Field
 from typing import Optional 
 from datetime import datetime
 
@@ -35,25 +37,31 @@ class DockBase(BaseModel):
 
 class DockRead(DockBase):
     id:int
+    class Config:
+            orm_mode = True
+
+class DockUpdate(BaseModel):
+    dock_code: Optional[int] = None
+    dock_status: Optional[enums.DockStatus] = None
+    dock_name: Optional[str] = None
+    cargo_capacity: Optional[int] = Field(None, ge=0)
+    harbor_id: Optional[int] = None
+    dock_size: Optional[enums.VesselSize] = None
     
 
 
 
 class ShipBase(BaseModel):
     ship_name: Optional[str] = "unknown ship"
-    current_cargo: int = 0
+    current_cargo: int = Field(0, ge=0)
     registration_number: str
     ship_status: Optional[enums.ShipStatus] = enums.ShipStatus.DOCKED
-    cargo_capacity: int
+    cargo_capacity: int = Field(..., ge=0)
     ship_size: enums.VesselSize
-
-    @validator("current_cargo", "cargo_capacity")
-    def non_negative(cls, v):
-        if v is None:
-            return v
-        if v < 0:
-            raise ValueError("must be >= 0")
-        return v
+    @field_validator("ship_name", "registration_number")
+    @classmethod
+    def normalize(cls, value: str) -> str:
+        return value.strip().lower()
 
     @model_validator(mode="after")
     def check_cargo_vs_capacity(self):
@@ -70,23 +78,16 @@ class ShipCreate(ShipBase):
 
 class ShipUpdate(BaseModel):
     ship_name: Optional[str] =None
-    current_cargo: Optional[int] = None
+    current_cargo: Optional[int] = Field(None, ge=0)
     registration_number: Optional[str] = None
     ship_status: Optional[enums.ShipStatus] = None
-    cargo_capacity: Optional[int] = None
+    cargo_capacity: Optional[int]  = Field(None, ge=0)
     ship_size: Optional[enums.VesselSize]= None
     @field_validator("ship_name", "registration_number")
     @classmethod
     def normalizes(cls, value: str) -> str:
         return value.strip().lower()
 
-    @validator("current_cargo", "cargo_capacity")
-    def non_negative(cls, v):
-        if v is None:
-            return v
-        if v < 0:
-            raise ValueError("must be >= 0")
-        return v
     
     @model_validator(mode="after")
     def check_cargo_vs_capacity(self):
