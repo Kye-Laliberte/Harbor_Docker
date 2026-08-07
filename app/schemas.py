@@ -1,7 +1,7 @@
 from email.policy import default
 
 import app.enums as enums 
-from pydantic import BaseModel, model_validator, root_validator, validator, field_validator, Field
+from pydantic import BaseModel, model_validator, root_validator, field_validator, Field
 from typing import Optional 
 from datetime import datetime
 # harbor schemas   
@@ -89,5 +89,50 @@ class ShipUpdate(BaseModel):
 class ShipRead(ShipBase):
     id: int
 
+    class Config:
+        orm_mode = True
+
+
+class VoyageBase(BaseModel):
+    ship_id: int
+    departure_date: datetime
+    estimated_arrival: datetime
+    arrival_date: Optional[datetime] = None
+    travel_status: Optional[enums.VoyageStatus] = enums.VoyageStatus.SCHEDULED
+    destination_harbor_id: Optional[int] = None
+    departure_harbor_id: int
+    model_config = {
+        "from_attributes": True,
+    }
+    @model_validator(mode="after")
+    def check_dates(self):    
+        departure_date = self.departure_date
+        arrival_date = self.arrival_date
+        if departure_date is not None and arrival_date is not None and arrival_date < departure_date:
+            raise ValueError("arrival_date must be after departure_date")
+        return self
+
+class VoyageCreate(VoyageBase):
+    pass
+
+class VoyageUpdate(BaseModel):
+    ship_id: Optional[int] = None
+    departure_date: Optional[datetime] = None
+    arrival_date: Optional[datetime] = None
+    travel_status: Optional[enums.VoyageStatus] = None
+    model_config = {
+        "from_attributes": True
+    }
+    @model_validator(mode="after")
+    def check_dates(self):
+        departure_date = self.departure_date
+        arrival_date = self.arrival_date
+        if departure_date is not None and arrival_date is not None and arrival_date < departure_date:
+            raise ValueError("arrival_date must be after departure_date")
+        return self
+
+class VoyageRead(VoyageBase):
+    id: int
+    
     class Config:
         orm_mode = True

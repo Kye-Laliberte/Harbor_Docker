@@ -82,10 +82,10 @@ class Voyage(Base):
     id = Column(Integer, primary_key=True, index=True)
     ship_id = Column(Integer, ForeignKey('ships.id'), nullable= False)
     departure_date = Column(TIMESTAMP(timezone=True), nullable=False)
-    estimated_arrival =Column(TIMESTAMP(timezone=True))
+    estimated_arrival =Column(TIMESTAMP(timezone=True), nullable=False)
     arrival_date =Column(TIMESTAMP(timezone=True), nullable=True)
 
-    travel_status = Column(SQLEnum(VoyageStatus, name='voyage_status', native_enum=True), default=VoyageStatus.SCHEDULED, nullable=False)
+    travel_status = Column(Enum(VoyageStatus,values_callable = lambda enm:[ e.value for e in enm ], name='voyage_status',  native_enum=True), default=VoyageStatus.SCHEDULED, nullable=False)
     
     departure_harbor_id = Column(Integer, ForeignKey('harbors.id'),nullable=False)
     destination_harbor_id = Column(Integer,ForeignKey('harbors.id'),nullable=True)
