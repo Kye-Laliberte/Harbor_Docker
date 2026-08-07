@@ -25,8 +25,8 @@ class  Dock(Base):
 
 class Ship(Base):
     __tablename__ = 'ships'
-    __table_args__ =(
-            CheckConstraint('current_cargo IS NULL OR cargo_capacity >= current_cargo', name='ck_available_cargo'),
+    __table_args__ = (
+        CheckConstraint('current_cargo <= cargo_capacity', name='ck_available_cargo'),
     )
     id = Column(Integer, primary_key=True, index=True)
     ship_name = Column(String(100), default='Unknown Ship', nullable=False)
@@ -50,9 +50,9 @@ class Docking(Base):
     id = Column(Integer, primary_key=True, index=True)
     ship_id = Column(Integer, ForeignKey('ships.id'), nullable=False)
     dock_id = Column(Integer, ForeignKey('docks.id'), nullable=False)
-    arrival_date = Column(TIMESTAMP, nullable=False)
-    departure_date = Column(TIMESTAMP, nullable=True)
-    ship_clearance_status = Column(SQLEnum(ShipClearanceStatus, name='ship_clearance_status_enum', native_enum=True), default=ShipClearanceStatus.PENDING, nullable=False)
+    arrival_date = Column(TIMESTAMP(timezone=True), nullable=False)
+    departure_date = Column(TIMESTAMP(timezone=True), nullable=True)
+    ship_clearance_status = Column(Enum(ShipClearanceStatus,values_callable = lambda enm:[ e.value for e in enm ], name='ship_clearance_status_enum', native_enum=True), default=ShipClearanceStatus.PENDING, nullable=False)
     purpose = Column(String(200), nullable=True)
 
     ship = relationship("Ship", back_populates="dockings")

@@ -57,10 +57,10 @@ class DockUpdate(BaseModel):
 # ship schemas
 class ShipBase(BaseModel):
     ship_name: str 
-    current_cargo: int = Field(0, ge=0)
+    current_cargo: int = Field(default=0, ge=0)
     registration_number: str
     ship_status: enums.ShipStatus 
-    cargo_capacity: int = Field(..., ge=0)
+    cargo_capacity: int = Field(default=0, ge=0)
     ship_size: enums.VesselSize
     @field_validator("ship_name", "registration_number")
     @classmethod
@@ -81,7 +81,7 @@ class ShipCreate(ShipBase):
     pass
 
 class ShipUpdate(BaseModel):
-    ship_name: Optional[str] =None
+    ship_name: Optional[str] = None
     current_cargo: Optional[int] = Field(None, ge=0)
     registration_number: Optional[str] = None
     ship_status: Optional[enums.ShipStatus] = None
