@@ -114,8 +114,9 @@ class VoyageBase(BaseModel):
     def check_dates(self):    
         departure_date = self.departure_date
         arrival_date = self.arrival_date
-        if departure_date is not None and arrival_date is not None and arrival_date < departure_date:
-            raise ValueError("arrival_date must be after departure_date")
+        if departure_date and arrival_date:
+            if arrival_date.date() <= departure_date.date():
+                raise ValueError("arrival_date must be after departure_date")
         return self
 
 class VoyageCreate(VoyageBase):
@@ -133,12 +134,56 @@ class VoyageUpdate(BaseModel):
     def check_dates(self):
         departure_date = self.departure_date
         arrival_date = self.arrival_date
-        if departure_date is not None and arrival_date is not None and arrival_date < departure_date:
-            raise ValueError("arrival_date must be after departure_date")
+        if departure_date is not None and arrival_date is not None:
+            if arrival_date.date() <= departure_date.date():
+                raise ValueError("arrival_date must be after departure_date")
         return self
 
 class VoyageRead(VoyageBase):
     id: int
-    
+    class Config:
+        orm_mode = True
+
+class DockingBase(BaseModel):
+    ship_id: int
+    dock_id: int
+    arrival_date: datetime
+    departure_date: datetime
+    cargo_capacity: Optional[int] = Field(default=0, ge=0)
+    ship_clearance_status: enums.ShipClearanceStatus
+    purpose: Optional[str] = None
+    model_config = {
+        "from_attributes": True
+    }
+    @model_validator(mode="after")
+    def check_dates(self):
+        if self.arrival_date and self.departure_date:
+            if self.departure_date.date() >= self.arrival_date.date():
+                raise ValueError("departure_date must be after arrival_date")
+        
+        return self
+
+class DockingCreate(DockingBase):
+    ship_clearance_status: Optional[enums.ShipClearanceStatus] = enums.ShipClearanceStatus.PENDING
+    departure_date: Optional[datetime] = None
+
+class DockingUpdate(BaseModel):
+    dock_id: Optional[int] = None
+    arrival_date: Optional[datetime] = None
+    departure_date: Optional[datetime] = None
+    ship_clearance_status: Optional[enums.ShipClearanceStatus] = None
+    purpose: Optional[str] = None
+    model_config = {
+        "from_attributes": True
+    }
+    @model_validator(mode="after")
+    def check_dates(self):
+        if self.arrival_date  and self.departure_date:
+            if self.departure_date.date() >= self.arrival_date.date():
+                raise ValueError("departure_date must be after arrival_date")
+        
+
+class DockingRead(DockingBase):
+    id: int
     class Config:
         orm_mode = True

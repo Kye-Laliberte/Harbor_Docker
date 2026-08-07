@@ -12,7 +12,7 @@ class  Dock(Base):
     dock_name = Column(String(100), nullable=False) # changed 
     harbor_id = Column(Integer, ForeignKey('harbors.id'), nullable=False)
     dock_status = Column(Enum(DockStatus,values_callable = lambda enm:[ e.value for e in enm ], name='dock_status_enum', native_enum=True), nullable=False)
-    cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name='ck_dock_minimum_cargo'), nullable=False)
+    cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name='ck_dock_minimum_cargo'), nullable=False, default=0)
     dock_size = Column(Enum(VesselSize,values_callable = lambda ennm:[ e.value for e in ennm ], name='vessel_size_enum', native_enum=True), nullable=False)
 
     harbor = relationship("Harbor", back_populates="docks")
