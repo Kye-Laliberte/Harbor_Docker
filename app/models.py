@@ -33,10 +33,10 @@ class Ship(Base):
     #captain_id = Column(Integer, ForeignKey('captains.id'), nullable=False)
     current_cargo = Column(Integer, CheckConstraint('current_cargo >= 0', name='ck_ship_current_cargo'), default=0, nullable=False)
     registration_number = Column(String(100), unique=True, nullable=False)
-    ship_status = Column(SQLEnum(ShipStatus, name='ship_status_enum', native_enum=True), default=ShipStatus.DOCKED, nullable=False)
+    ship_status = Column(Enum(ShipStatus,values_callable = lambda enm:[ e.value for e in enm ], name='ship_status_enum', native_enum=True), default=ShipStatus.DOCKED, nullable=False)
     #captain = relationship("Captain", backref="ships")
     cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name= 'ck_ship_cargo_capacity'), nullable=False)
-    ship_size = Column(SQLEnum(VesselSize, name='vessel_size_enum', native_enum=True), nullable=False)
+    ship_size = Column(Enum(VesselSize,values_callable = lambda ennm:[ e.value for e in ennm ], name='vessel_size_enum', native_enum=True), nullable=False)
 
     voyages = relationship("Voyage", back_populates="ship")
     dockings = relationship("Docking", back_populates="ship")

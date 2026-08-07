@@ -4,7 +4,7 @@ import app.enums as enums
 from pydantic import BaseModel, model_validator, root_validator, validator, field_validator, Field
 from typing import Optional 
 from datetime import datetime
-
+# harbor schemas   
 class HarborBase(BaseModel):
     name: str
     timezone: datetime
@@ -22,7 +22,7 @@ class HarborUpdate(BaseModel):
     name: Optional[str] = None
     timezone: Optional[datetime] = None 
 
-
+# dock schemas
 class DockBase(BaseModel):
     dock_code: int
     dock_status: Optional[enums.DockStatus] = enums.DockStatus.ACTIVE
@@ -50,7 +50,7 @@ class DockUpdate(BaseModel):
     
 
 
-
+# ship schemas
 class ShipBase(BaseModel):
     ship_name: Optional[str] = "unknown ship"
     current_cargo: int = Field(0, ge=0)
@@ -65,10 +65,8 @@ class ShipBase(BaseModel):
 
     @model_validator(mode="after")
     def check_cargo_vs_capacity(self):
-        current = self.get("current_cargo")
-        capacity = self.get("cargo_capacity")
-        if current is not None and capacity is not None:
-            if current > capacity:
+        if self.current_cargo is not None and self.cargo_capacity is not None:
+            if self.current_cargo > self.cargo_capacity:
                 raise ValueError("current_cargo cannot exceed cargo_capacity")
         return self
 
@@ -88,17 +86,7 @@ class ShipUpdate(BaseModel):
     def normalizes(cls, value: str) -> str:
         return value.strip().lower()
 
-    
-    @model_validator(mode="after")
-    def check_cargo_vs_capacity(self):
-        current = self.get("current_cargo")
-        capacity = self.get("cargo_capacity")
-        if current is not None and capacity is not None:
-            if current > capacity:
-                raise ValueError("current_cargo cannot exceed cargo_capacity")
-        return self
-
-class ShipOut(ShipBase):
+class ShipRead(ShipBase):
     id: int
 
     class Config:
