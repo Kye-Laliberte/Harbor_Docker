@@ -5,7 +5,6 @@ from app.database import SessionLocal
 from app.dependencies import get_db
 from app.models import Ship
 from app.schemas import ShipCreate, ShipUpdate, ShipRead
-from app.enums import ShipStatus,VesselSize
 router = APIRouter(prefix="/ships", tags=["ships"])
 
 

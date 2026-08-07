@@ -18,6 +18,9 @@ class HarborRead(HarborBase):
     class Config:
         from_attributes = True
 
+class HarborCreate(HarborBase):
+    pass
+
 class HarborUpdate(BaseModel):
     name: Optional[str] = None
     timezone: Optional[datetime] = None 
@@ -25,7 +28,7 @@ class HarborUpdate(BaseModel):
 # dock schemas
 class DockBase(BaseModel):
     dock_code: int
-    dock_status: Optional[enums.DockStatus] = enums.DockStatus.ACTIVE
+    dock_status:enums.DockStatus
     dock_name: str
     cargo_capacity: int = Field(..., ge=0)
     harbor_id:int
@@ -34,6 +37,9 @@ class DockBase(BaseModel):
     @classmethod
     def normalize(cls, value: str) -> str:
         return value.strip().lower()
+
+class DockCreate(DockBase):
+    dock_status: Optional[enums.DockStatus] = enums.DockStatus.ACTIVE
 
 class DockRead(DockBase):
     id:int
@@ -48,14 +54,12 @@ class DockUpdate(BaseModel):
     harbor_id: Optional[int] = None
     dock_size: Optional[enums.VesselSize] = None
     
-
-
 # ship schemas
 class ShipBase(BaseModel):
-    ship_name: Optional[str] = "unknown ship"
+    ship_name: str 
     current_cargo: int = Field(0, ge=0)
     registration_number: str
-    ship_status: Optional[enums.ShipStatus] = enums.ShipStatus.DOCKED
+    ship_status: enums.ShipStatus 
     cargo_capacity: int = Field(..., ge=0)
     ship_size: enums.VesselSize
     @field_validator("ship_name", "registration_number")
@@ -72,6 +76,8 @@ class ShipBase(BaseModel):
 
 
 class ShipCreate(ShipBase):
+    ship_name: str = "unknown ship"
+    ship_status: Optional[enums.ShipStatus] = enums.ShipStatus.DOCKED
     pass
 
 class ShipUpdate(BaseModel):
@@ -92,7 +98,7 @@ class ShipRead(ShipBase):
     class Config:
         orm_mode = True
 
-
+# voyage schemas
 class VoyageBase(BaseModel):
     ship_id: int
     departure_date: datetime

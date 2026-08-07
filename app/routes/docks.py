@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.schemas import DockRead,DockBase,DockUpdate
+from app.schemas import DockRead,DockBase,DockUpdate,DockCreate
 from app.dependencies import get_db
 from app.models import Dock,Ship,Harbor
 
@@ -9,13 +9,13 @@ router = APIRouter(prefix="/docks", tags=["docks"])
 
 
 
-@router.get("/", response_model=list[DockRead])
+@router.get("/getall", response_model=list[DockRead])
 def list_docks(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return db.query(Dock).offset(skip).limit(limit).all()
 
 
 @router.post("/newDock", response_model=DockRead, status_code=status.HTTP_201_CREATED)
-def create_dock(payload: DockBase, db: Session = Depends(get_db)):
+def create_dock(payload: DockCreate, db: Session = Depends(get_db)):
     dock = Dock(**payload.model_dump())
 
     harbor=db.query(Harbor).filter(Harbor.id == dock.harbor_id).first()

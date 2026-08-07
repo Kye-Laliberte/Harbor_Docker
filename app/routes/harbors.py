@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
 from app.models import Harbor, Dock
-from app.schemas import HarborBase, HarborRead, HarborUpdate
+from app.schemas import HarborBase, HarborRead, HarborUpdate, HarborCreate 
 
 router = APIRouter(prefix="/harbors", tags=["harbors"])
 
@@ -14,7 +14,7 @@ def list_harbors(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
 
 
 @router.post("/new", response_model=HarborRead, status_code=status.HTTP_201_CREATED)
-def create_harbor(payload: HarborBase, db: Session = Depends(get_db)):
+def create_harbor(payload: HarborCreate, db: Session = Depends(get_db)):
     
     harbor = Harbor(**payload.model_dump())
     val = db.query(Harbor).filter(Harbor.name == harbor.name).all()
