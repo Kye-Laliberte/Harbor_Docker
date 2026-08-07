@@ -4,6 +4,7 @@ import app.enums as enums
 from pydantic import BaseModel, model_validator, root_validator, field_validator, Field
 from typing import Optional 
 from datetime import datetime
+
 # harbor schemas   
 class HarborBase(BaseModel):
     name: str
@@ -115,7 +116,7 @@ class VoyageBase(BaseModel):
         departure_date = self.departure_date
         arrival_date = self.arrival_date
         if departure_date and arrival_date:
-            if arrival_date.date() <= departure_date.date():
+            if arrival_date.date() < departure_date.date():
                 raise ValueError("arrival_date must be after departure_date")
         return self
 
@@ -135,7 +136,7 @@ class VoyageUpdate(BaseModel):
         departure_date = self.departure_date
         arrival_date = self.arrival_date
         if departure_date is not None and arrival_date is not None:
-            if arrival_date.date() <= departure_date.date():
+            if arrival_date.date() < departure_date.date():
                 raise ValueError("arrival_date must be after departure_date")
         return self
 
@@ -149,7 +150,6 @@ class DockingBase(BaseModel):
     dock_id: int
     arrival_date: datetime
     departure_date: datetime
-    cargo_capacity: Optional[int] = Field(default=0, ge=0)
     ship_clearance_status: enums.ShipClearanceStatus
     purpose: Optional[str] = None
     model_config = {
@@ -157,8 +157,11 @@ class DockingBase(BaseModel):
     }
     @model_validator(mode="after")
     def check_dates(self):
+        self.arrival_date = self.arrival_date
+        self.departure_date = self.departure_date
+
         if self.arrival_date and self.departure_date:
-            if self.departure_date.date() >= self.arrival_date.date():
+            if self.departure_date.date() > self.arrival_date.date():
                 raise ValueError("departure_date must be after arrival_date")
         
         return self
@@ -178,8 +181,12 @@ class DockingUpdate(BaseModel):
     }
     @model_validator(mode="after")
     def check_dates(self):
+        # Normalize dates to UTC-aware
+        self.arrival_date =self.arrival_date
+        self.departure_date =self.departure_date
+
         if self.arrival_date  and self.departure_date:
-            if self.departure_date.date() >= self.arrival_date.date():
+            if self.departure_date.date() > self.arrival_date.date():
                 raise ValueError("departure_date must be after arrival_date")
         
 
