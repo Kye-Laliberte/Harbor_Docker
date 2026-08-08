@@ -116,7 +116,7 @@ class VoyageBase(BaseModel):
         departure_date = self.departure_date
         arrival_date = self.arrival_date
         if departure_date and arrival_date:
-            if arrival_date.date() < departure_date.date():
+            if arrival_date < departure_date:
                 raise ValueError("arrival_date must be after departure_date")
         return self
 
@@ -136,7 +136,7 @@ class VoyageUpdate(BaseModel):
         departure_date = self.departure_date
         arrival_date = self.arrival_date
         if departure_date is not None and arrival_date is not None:
-            if arrival_date.date() < departure_date.date():
+            if arrival_date < departure_date:
                 raise ValueError("arrival_date must be after departure_date")
         return self
 
@@ -161,7 +161,7 @@ class DockingBase(BaseModel):
         self.departure_date = self.departure_date
 
         if self.arrival_date and self.departure_date:
-            if self.departure_date.date() > self.arrival_date.date():
+            if self.departure_date < self.arrival_date:
                 raise ValueError("departure_date must be after arrival_date")
         
         return self
@@ -186,7 +186,7 @@ class DockingUpdate(BaseModel):
         self.departure_date =self.departure_date
 
         if self.arrival_date  and self.departure_date:
-            if self.departure_date.date() > self.arrival_date.date():
+            if self.departure_date < self.arrival_date:
                 raise ValueError("departure_date must be after arrival_date")
         
 

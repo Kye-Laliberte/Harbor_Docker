@@ -44,7 +44,7 @@ class Ship(Base):
 class Docking(Base):
     __tablename__ = 'dockings'
     __table_args__ =(
-        CheckConstraint('departure_date IS NULL OR departure_date >= arrival_date', name='ck_departure_after_arrival'),
+        CheckConstraint('departure_date IS NULL OR departure_date > arrival_date', name='ck_departure_after_arrival'),
     )
 
     id = Column(Integer, primary_key=True, index=True)

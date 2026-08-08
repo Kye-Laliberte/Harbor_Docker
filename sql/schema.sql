@@ -63,5 +63,5 @@ CREATE TABLE if NOT EXISTS dockings(
     departure_date TIMESTAMP WITH TIME ZONE,
     purpose TEXT,
     ship_clearance_status ship_clearance_status_enum DEFAULT 'pending',
-    CHECK(departure_date IS NULL OR departure_date >= arrival_date)
+    CHECK(departure_date IS NULL OR departure_date > arrival_date)
 );
