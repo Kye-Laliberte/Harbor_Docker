@@ -1,15 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
+from app.models import Docking
 from app.schemas import DockingRead, DockingCreate, DockingUpdate
-from app.services.docking_service import (
-    list_dockings as service_list_dockings,
-    create_docking as service_create_docking,
-    get_docking as service_get_docking,
-    update_docking as service_update_docking,
-    delete_docking as service_delete_docking,
-)
+from app.services.docking_service import sev_list_dockings, sev_create_docking, sev_get_docking, sev_delete_docking
 
 
 router = APIRouter(prefix="/dockings", tags=["dockings"])
@@ -17,24 +12,25 @@ router = APIRouter(prefix="/dockings", tags=["dockings"])
 
 @router.get("/list", response_model=list[DockingRead])
 def list_dockings(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return service_list_dockings(db, skip=skip, limit=limit)
+    return sev_list_dockings(db, skip, limit)
 
 
-@router.post("/create", response_model=DockingRead, status_code=201)
+@router.post("/create", response_model=DockingRead, status_code=status.HTTP_201_CREATED)
 def create_docking(payload: DockingCreate, db: Session = Depends(get_db)):
-    return service_create_docking(db, payload)
-
+    docking = sev_create_docking(db, payload)
+    db.add(docking)
+    db.commit()
+    db.refresh(docking)
+    return docking
 
 @router.get("/{docking_id}/get", response_model=DockingRead)
 def get_docking(docking_id: int, db: Session = Depends(get_db)):
-    return service_get_docking(db, docking_id)
-
-
-@router.put("/{docking_id}/update", response_model=DockingRead)
-def update_docking(docking_id: int, payload: DockingUpdate, db: Session = Depends(get_db)):
-    return service_update_docking(db, docking_id, payload)
-
-
-@router.delete("/{docking_id}/delete", status_code=204)
+    docking = sev_get_docking(db, docking_id)
+    if not docking:
+        raise HTTPException(status_code=404, detail="Docking not found")
+    return docking
+    
+@router.delete("/{docking_id}/delete", status_code=status.HTTP_204_NO_CONTENT)
 def delete_docking(docking_id: int, db: Session = Depends(get_db)):
-    return service_delete_docking(db, docking_id)
+    sev_delete_docking(db, docking_id)
+    return None
