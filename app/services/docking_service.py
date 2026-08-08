@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 import app.enums as enums
 from app.models import Docking, Ship, Dock
-from app.schemas import DockingCreate, DockingUpdate, DockingRead
+from app.schemas import DockingCreate
 
 
 SIZE_RANK = {
@@ -15,17 +15,26 @@ SIZE_RANK = {
     enums.VesselSize.LARGE.value: 3,
 }
 
-def _normalize_datetime(dt: Optional[datetime]) -> Optional[datetime]:
-    if dt is None:
-        return None
-    # Ensure the datetime is timezone-aware and in UTC
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    else:
-        dt = dt.astimezone(timezone.utc)
-    return dt
 
 
+def validate_docking_input(dock_id: int, ship_id: int, arrival_date: datetime, departure_date: Optional[datetime], db: Session):
+    dock = db.query(Dock).filter(Dock.id == dock_id).first()
+    if not dock:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dock not found")
+    if str(dock.dock_status.value) != enums.DockStatus.ACTIVE.value:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Dock is not active for new dockings (current status: {dock.dock_status.value})")
+    ship = db.query(Ship).filter(Ship.id == ship_id).first()
+    if not ship:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
+    if str(ship.ship_status.value) != enums.ShipStatus.SAILING.value:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Ship is not sailing (current status: {ship.ship_status.value})")
+    if not _check_size_compatibility(dock, ship):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ship size incompatible with dock size")
+    # Cargo capacity rule: dock must be able to accept ship's current cargo
+    if dock.cargo_capacity is not None and ship.current_cargo is not None and dock.cargo_capacity < ship.current_cargo:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Dock cannot accept ship's current cargo based on capacity")
+    return True
+    
 def _ends_at(dt: Optional[datetime]) -> datetime:
     # Treat None as an open-ended interval to the far future (UTC-aware)
     if dt is None:
@@ -76,24 +85,9 @@ def _check_overlaps(db: Session, ship_id: int, dock_id: int, arrival: datetime, 
 
 def sev_create_docking(db: Session, payload: DockingCreate) -> Docking:
     # Basic existence checks moved here to keep pydantic models simpler
-    ship = db.query(Ship).filter(Ship.id == payload.ship_id).first()
-    if not ship:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ship not found")
+  
+    validate_docking_input(payload.dock_id, payload.ship_id, payload.arrival_date, payload.departure_date, db)
 
-    dock = db.query(Dock).filter(Dock.id == payload.dock_id).first()
-    if not dock:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Dock not found")
-    
-    if str(dock.dock_status.value) != enums.DockStatus.ACTIVE.value:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Dock is not active for new dockings (current status: {dock.dock_status.value})")
-
-    # Validate size compatibility
-    if not _check_size_compatibility(dock, ship):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ship size incompatible with dock size")
-
-    # Cargo capacity rule: dock must be able to accept ship's current cargo
-    if dock.cargo_capacity is not None and ship.current_cargo is not None and dock.cargo_capacity < ship.current_cargo:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Dock cannot accept ship's current cargo based on capacity")
 
     # Validate date ordering and normalize to UTC-aware
     arrival = _ensure_aware_utc(payload.arrival_date)
