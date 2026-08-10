@@ -16,8 +16,17 @@ SIZE_RANK = {
 }
 
 
-
 def validate_docking_input(dock_id: int, ship_id: int, arrival_date: datetime, departure_date: Optional[datetime], db: Session):
+    """Validate docking business rules before creating a docking.
+    Inputs:
+        dock_id: Identifier of the dock being requested.
+        ship_id: Identifier of the ship requesting the docking.
+        arrival_date: Planned arrival timestamp.
+        departure_date: Optional planned departure timestamp.
+        db: Database session used to fetch related records.
+    Output:
+        Returns True when the dock and ship pass all validation checks.
+    """
     dock = db.query(Dock).filter(Dock.id == dock_id).first()
     if not dock:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dock not found")
@@ -36,6 +45,14 @@ def validate_docking_input(dock_id: int, ship_id: int, arrival_date: datetime, d
     return True
     
 def _ends_at(dt: Optional[datetime]) -> datetime:
+    """Normalize a datetime to an end-of-range value for overlap comparisons.
+
+    Inputs:
+        dt: Optional datetime to normalize.
+
+    Output:
+        Returns a timezone-aware datetime suitable for interval comparison.
+    """
     # Treat None as an open-ended interval to the far future (UTC-aware)
     if dt is None:
         return datetime.max.replace(tzinfo=timezone.utc)
@@ -44,6 +61,14 @@ def _ends_at(dt: Optional[datetime]) -> datetime:
 
 
 def _ensure_aware_utc(dt: Optional[datetime]) -> Optional[datetime]:
+    """Ensure a datetime is timezone-aware in UTC.
+
+    Inputs:
+        dt: Optional datetime to normalize.
+
+    Output:
+        Returns the same datetime with UTC timezone information when present, or None.
+    """
     if dt is None:
         return None
     if dt.tzinfo is None:
@@ -52,10 +77,29 @@ def _ensure_aware_utc(dt: Optional[datetime]) -> Optional[datetime]:
 
 
 def sev_list_dockings(db: Session, skip: int = 0, limit: int = 100) -> List[Docking]:
+    """List dockings with optional pagination.
+
+    Inputs:
+        db: Database session.
+        skip: Number of records to skip.
+        limit: Maximum number of records to return.
+
+    Output:
+        Returns a list of Docking objects.
+    """
     return db.query(Docking).offset(skip).limit(limit).all()
 
 
 def _check_size_compatibility(dock: Dock, ship: Ship):
+    """Check whether a dock can accommodate a ship based on size.
+
+    Inputs:
+        dock: Dock instance being evaluated.
+        ship: Ship instance being evaluated.
+
+    Output:
+        Returns True when the dock size is large enough for the ship.
+    """
     # Dock must be able to accommodate ship size (dock size rank >= ship size rank)
     dock_rank = SIZE_RANK.get(str(dock.dock_size.value), None)
     ship_rank = SIZE_RANK.get(str(ship.ship_size.value), None)
@@ -65,6 +109,19 @@ def _check_size_compatibility(dock: Dock, ship: Ship):
 
 
 def _check_overlaps(db: Session, ship_id: int, dock_id: int, arrival: datetime, departure: Optional[datetime], exclude_id: Optional[int] = None):
+    """Ensure a ship and dock do not have overlapping docking windows.
+
+    Inputs:
+        db: Database session.
+        ship_id: Identifier of the ship being checked.
+        dock_id: Identifier of the dock being checked.
+        arrival: Planned arrival datetime.
+        departure: Optional planned departure datetime.
+        exclude_id: Optional docking id to ignore during the overlap check.
+
+    Output:
+        Raises an HTTP 400 error if an overlapping docking is found.
+    """
     # arrival and departure must be timezone-aware UTC when passed in
     existing_for_dock = db.query(Docking).filter(Docking.dock_id == dock_id).all()
     existing_for_ship = db.query(Docking).filter(Docking.ship_id == ship_id).all()
@@ -84,6 +141,13 @@ def _check_overlaps(db: Session, ship_id: int, dock_id: int, arrival: datetime, 
 
 
 def sev_create_docking(db: Session, payload: DockingCreate) -> Docking:
+    """Create a new docking after running validation and conflict checks.
+    Inputs:
+        db: Database session.
+        payload: Pydantic payload containing docking details.
+
+    Output: Returns the newly created Docking object.
+    """
     # Basic existence checks moved here to keep pydantic models simpler
   
     validate_docking_input(payload.dock_id, payload.ship_id, payload.arrival_date, payload.departure_date, db)
@@ -109,6 +173,13 @@ def sev_create_docking(db: Session, payload: DockingCreate) -> Docking:
     return docking
 
 def sev_get_docking(db: Session, docking_id: int) -> Docking:
+    """Retrieve a docking by id or raise an error if it does not exist.
+    Inputs:
+        db: Database session.
+        docking_id: Identifier of the docking to fetch.
+    Output:
+        Returns the matching Docking object.
+    """
     docking = db.query(Docking).filter(Docking.id == docking_id).first()
     if not docking:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docking not found")
@@ -116,7 +187,13 @@ def sev_get_docking(db: Session, docking_id: int) -> Docking:
 
 
 def sev_delete_docking(db: Session, docking_id: int) -> None:
-
+    """Delete a docking by id.
+    Inputs:
+        db: Database session.
+        docking_id: Identifier of the docking to delete.
+    Output:
+        Returns None after the docking has been removed.
+    """
     docking = sev_get_docking(db, docking_id)
     if not docking:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docking not found")
