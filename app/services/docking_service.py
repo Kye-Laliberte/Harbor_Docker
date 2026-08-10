@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 import app.enums as enums
 from app.models import Docking, Ship, Dock
-from app.schemas import DockingCreate
+from app.schemas import DockingCreate, DockingUpdate
 
 
 SIZE_RANK = {
