@@ -9,7 +9,7 @@ class  Dock(Base):
     __tablename__ = 'docks'
     id = Column(Integer, primary_key=True, index=True)
     dock_code = Column(Integer, unique=True, nullable=False)
-    dock_name = Column(String(100), nullable=False) # changed 
+    dock_name = Column(String(100), nullable=True) # changed 
     harbor_id = Column(Integer, ForeignKey('harbors.id'), nullable=False)
     dock_status = Column(Enum(DockStatus,values_callable = lambda enm:[ e.value for e in enm ], name='dock_status_enum', native_enum=True), nullable=False)
     cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name='ck_dock_minimum_cargo'), nullable=False, default=0)
