@@ -13,18 +13,20 @@ def sev_list_active_docks(db, harbor_id: int, skip: int = 0, limit: int = 100) -
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No active docks found for harbor_id {harbor_id}")
     return out
 
-def sev_list_docks_above_size(db, harbor_id: int, min_size: str, skip: int = 0, limit: int = 100) -> List[Dock]:
+def sev_list_docks_above_size(db, harbor_id: int, min_size: VesselSize, skip: int = 0, limit: int = 100) -> List[Dock]:
     """Return a paginated list of docks for a specific harbor that are at or above the specified size."""
 
     if min_size is VesselSize.LARGE:
-        return db.query(Dock).filter(Dock.harbor_id == harbor_id, Dock.dock_size == VesselSize.LARGE, Dock.dock_status == "active").offset(skip).limit(limit).all()
+        out = db.query(Dock).filter(Dock.harbor_id == harbor_id, Dock.dock_size == VesselSize.LARGE, Dock.dock_status == "active").offset(skip).limit(limit).all()
     elif min_size is VesselSize.MEDIUM:
-        return db.query(Dock).filter(Dock.harbor_id == harbor_id, Dock.dock_size == VesselSize.MEDIUM, Dock.dock_status == "active").offset(skip).limit(limit).all()
+        out = db.query(Dock).filter(Dock.harbor_id == harbor_id, Dock.dock_size == VesselSize.MEDIUM, Dock.dock_size == VesselSize.LARGE, Dock.dock_status == "active").offset(skip).limit(limit).all()
     elif min_size is VesselSize.SMALL:
-        return db.query(Dock).filter(Dock.harbor_id == harbor_id, (Dock.dock_size == VesselSize.SMALL) | (Dock.dock_size == VesselSize.MEDIUM), Dock.dock_status == "active").offset(skip).limit(limit).all()
+        out = db.query(Dock).filter(Dock.harbor_id == harbor_id, (Dock.dock_size == VesselSize.SMALL, Dock.dock_size == VesselSize.MEDIUM), Dock.dock_status == "active").offset(skip).limit(limit).all()
     else:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"min_size must be 'SMALL', 'MEDIUM', or 'LARGE', got {min_size}")
-
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"min_size must be 'SMALL', 'MEDIUM', or 'LARGE', got {min_size.value}")
+    if not out:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No docks of size {min_size.value} or larger found for harbor_id {harbor_id}")
+    return out
 def sev_list_harbors(db: Session, skip: int = 0, limit: int = 100) -> List[Harbor]:
     """Return a paginated list of harbors from the database."""
     return db.query(Harbor).offset(skip).limit(limit).all()
