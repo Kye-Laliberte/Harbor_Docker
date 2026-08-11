@@ -1,5 +1,5 @@
 from typing import List
-
+from sqlalchemy import or_
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.enums import VesselSize
@@ -19,13 +19,16 @@ def sev_list_docks_above_size(db, harbor_id: int, min_size: VesselSize, skip: in
     if min_size is VesselSize.LARGE:
         out = db.query(Dock).filter(Dock.harbor_id == harbor_id, Dock.dock_size == VesselSize.LARGE, Dock.dock_status == "active").offset(skip).limit(limit).all()
     elif min_size is VesselSize.MEDIUM:
-        out = db.query(Dock).filter(Dock.harbor_id == harbor_id, Dock.dock_size == VesselSize.MEDIUM, Dock.dock_size == VesselSize.LARGE, Dock.dock_status == "active").offset(skip).limit(limit).all()
+        out = db.query(Dock).filter(Dock.harbor_id == harbor_id, or_(Dock.dock_size == VesselSize.MEDIUM, Dock.dock_size == VesselSize.LARGE), Dock.dock_status == "active").offset(skip).limit(limit).all()
     elif min_size is VesselSize.SMALL:
-        out = db.query(Dock).filter(Dock.harbor_id == harbor_id, (Dock.dock_size == VesselSize.SMALL, Dock.dock_size == VesselSize.MEDIUM), Dock.dock_status == "active").offset(skip).limit(limit).all()
+        out = db.query(Dock).filter(Dock.harbor_id == harbor_id, or_(Dock.dock_size == VesselSize.SMALL, Dock.dock_size == VesselSize.MEDIUM), Dock.dock_status == "active").offset(skip).limit(limit).all()
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"min_size must be 'SMALL', 'MEDIUM', or 'LARGE', got {min_size.value}")
-    if not out:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No docks of size {min_size.value} or larger found for harbor_id {harbor_id}")
+    if not out or VesselSize.LARGE:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No {min_size.value} or larger docks found at harbor_id {harbor_id}")
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No {min_size.value} docks found at harbor_id: {harbor_id}")
+
     return out
 def sev_list_harbors(db: Session, skip: int = 0, limit: int = 100) -> List[Harbor]:
     """Return a paginated list of harbors from the database."""
