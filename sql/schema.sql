@@ -6,7 +6,7 @@
 
 -- Enum type definitions
 CREATE TYPE IF NOT EXISTS dock_status_enum AS ENUM ('active', 'inactive', 'maintenance');
-CREATE TYPE IF NOT EXISTS vessel_size_enum AS ENUM ('small', 'medium', 'large');
+-- vessel sizes are stored as integer ranks: 1=small, 2=medium, 3=large
 CREATE TYPE IF NOT EXISTS ship_status_enum AS ENUM ('docked', 'sailing', 'maintenance');
 CREATE TYPE IF NOT EXISTS ship_clearance_status_enum AS ENUM ('pending', 'approved', 'denied');
 CREATE TYPE IF NOT EXISTS voyage_status AS ENUM ('scheduled', 'departed', 'arrived', 'cancelled');
@@ -20,7 +20,7 @@ CREATE TABLE if NOT EXISTS ships(
     current_cargo INTEGER NOT NULL DEFAULT 0 CHECK (current_cargo >= 0),
     registration_number TEXT UNIQUE NOT NULL,
     cargo_capacity INTEGER NOT NULL CHECK (cargo_capacity >= 0),
-    ship_size vessel_size_enum NOT NULL,
+    ship_size INTEGER NOT NULL CHECK (ship_size IN (1, 2, 3)),
     CHECK(current_cargo <= cargo_capacity)
     --current_harbor_id INTEGER REFERENCES (harbor.id) DEFAULT=NULL
 );
@@ -52,7 +52,7 @@ CREATE TABLE if NOT EXISTS docks(
     harbor_id INTEGER REFERENCES harbors(id),
     dock_name TEXT,
     cargo_capacity INTEGER NOT NULL DEFAULT 0 CHECK (cargo_capacity >= 0),
-    dock_size vessel_size_enum NOT NULL
+    dock_size INTEGER NOT NULL CHECK (dock_size IN (1, 2, 3))
 );
 
 CREATE TABLE if NOT EXISTS dockings(
