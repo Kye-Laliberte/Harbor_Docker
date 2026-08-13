@@ -10,9 +10,9 @@ from app.schemas import DockingCreate, DockingUpdate
 
 
 SIZE_RANK = {
-    enums.VesselSize.SMALL.value: 1,
-    enums.VesselSize.MEDIUM.value: 2,
-    enums.VesselSize.LARGE.value: 3,
+    enums.VesselSize.SMALL: 1,
+    enums.VesselSize.MEDIUM: 2,
+    enums.VesselSize.LARGE: 3,
 }
 
 
@@ -101,8 +101,8 @@ def _check_size_compatibility(dock: Dock, ship: Ship):
         Returns True when the dock size is large enough for the ship.
     """
     # Dock must be able to accommodate ship size (dock size rank >= ship size rank)
-    dock_rank = SIZE_RANK.get(str(dock.dock_size.value), None)
-    ship_rank = SIZE_RANK.get(str(ship.ship_size.value), None)
+    dock_rank = SIZE_RANK.get(enums.VesselSize(dock.dock_size), None)
+    ship_rank = SIZE_RANK.get(enums.VesselSize(ship.ship_size), None)
     if dock_rank is None or ship_rank is None:
         return False
     return dock_rank >= ship_rank

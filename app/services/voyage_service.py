@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models import Ship, Voyage
-from app.schemas import VoyageCreate, VoyageUpdate
+from app.schemas import VoyageCreate, VoyageBase, VoyageRead, Updatedates
 from app.services.harbor_service import harbor_active_docks, sev_list_docks_above_size as size_filter
 from app.enums import VesselSize
 

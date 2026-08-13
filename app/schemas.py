@@ -123,11 +123,12 @@ class VoyageBase(BaseModel):
 class VoyageCreate(VoyageBase):
     pass
 
-class VoyageUpdate(BaseModel):
-    ship_id: Optional[int] = None
+class Updatedates(BaseModel):
+    ship_id: int
     departure_date: Optional[datetime] = None
     arrival_date: Optional[datetime] = None
     travel_status: Optional[enums.VoyageStatus] = None
+    estimated_arrival: datetime
     model_config = {
         "from_attributes": True
     }
