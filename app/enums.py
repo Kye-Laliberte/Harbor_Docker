@@ -1,4 +1,4 @@
-﻿from enum import Enum
+﻿from enum import Enum, IntEnum
 
 
 class DockStatus(str, Enum):
@@ -7,10 +7,10 @@ class DockStatus(str, Enum):
     MAINTENANCE = 'maintenance'
 
 
-class VesselSize(str, Enum):
-    SMALL = 'small'
-    MEDIUM = 'medium'
-    LARGE = 'large'
+class VesselSize(IntEnum):
+    SMALL = 1
+    MEDIUM = 2
+    LARGE = 3
 
 
 class ShipStatus(str, Enum):
