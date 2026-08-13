@@ -13,7 +13,7 @@ class  Dock(Base):
     harbor_id = Column(Integer, ForeignKey('harbors.id'), nullable=False)
     dock_status = Column(Enum(DockStatus,values_callable = lambda enm:[ e.value for e in enm ], name='dock_status_enum', native_enum=True), nullable=False)
     cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name='ck_dock_minimum_cargo'), nullable=False, default=0)
-    dock_size = Column(Enum(VesselSize,values_callable = lambda ennm:[ e.value for e in ennm ], name='vessel_size_enum', native_enum=True), nullable=False)
+    dock_size = Column(Integer, CheckConstraint('dock_size IN (1, 2, 3)', name='ck_dock_size'), nullable=False)
 
     harbor = relationship("Harbor", back_populates="docks")
     dockings = relationship("Docking", back_populates="dock")
@@ -36,7 +36,7 @@ class Ship(Base):
     ship_status = Column(Enum(ShipStatus,values_callable = lambda enm:[ e.value for e in enm ], name='ship_status_enum', native_enum=True), default=ShipStatus.DOCKED, nullable=False)
     #captain = relationship("Captain", backref="ships")
     cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name= 'ck_ship_cargo_capacity'), nullable=False)
-    ship_size = Column(Enum(VesselSize,values_callable = lambda ennm:[ e.value for e in ennm ], name='vessel_size_enum', native_enum=True), nullable=False)
+    ship_size = Column(Integer, CheckConstraint('ship_size IN (1, 2, 3)', name='ck_ship_size'), nullable=False)
 
     voyages = relationship("Voyage", back_populates="ship")
     dockings = relationship("Docking", back_populates="ship")
