@@ -4,15 +4,18 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models import Ship, Voyage
-from app.schemas import VoyageCreate, VoyageBase, VoyageRead, Updatedates
-from app.services.harbor_service import harbor_active_docks, sev_list_docks_above_size as size_filter
-from app.enums import VesselSize
+from app.schemas import Updatedates, VoyageCreate
+from app.services.harbor_service import sev_list_docks_above_size as size_filter
+
 
 class VoyageService:
     """Service class that encapsulates voyage CRUD operations."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, v_id: int):
         self.db = db
+        self.voyage = None
+        if v_id:
+            self.voyage = self.get_voyage(voyage_id=v_id)
 
     def date_validation(self, departure_date: Optional[str], arrival_date: Optional[str], estimated_arrival: Optional[str]):
         """Validate the chronological order of voyage dates."""
