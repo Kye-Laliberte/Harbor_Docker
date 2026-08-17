@@ -17,14 +17,15 @@ class VoyageService:
         if v_id:
             self.voyage = self.get_voyage(voyage_id=v_id)
 
-    def date_validation(self, departure_date: Optional[str], arrival_date: Optional[str], estimated_arrival: Optional[str]):
+    def date_validation(self,departure_date: Optional[object],arrival_date: 
+                Optional[object],estimated_arrival: Optional[object],):
         """Validate the chronological order of voyage dates."""
-        if arrival_date is not None and arrival_date < departure_date:
+        if arrival_date is not None and departure_date is not None and arrival_date < departure_date:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="arrival_date cannot be before departure_date",
             )
-        if estimated_arrival is not None and estimated_arrival < departure_date:
+        if estimated_arrival is not None and departure_date is not None and estimated_arrival < departure_date:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="estimated_arrival cannot be before departure_date",
@@ -36,13 +37,16 @@ class VoyageService:
 
     def create_voyage(self, payload: VoyageCreate) -> Voyage:
         """Create a new voyage after validating business rules."""
-        ship_size = self.db.query(Ship).filter(Ship.id == payload.ship_id).first().ship_size
-       
-        # this line checks if there are docks available at the destination harbor that can accommodate the ship size
-        
-        size_filter(self.db, payload.destination_harbor_id, ship_size)
-           
-        
+        ship = self.db.query(Ship).filter(Ship.id == payload.ship_id).first()
+        if not ship:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
+        if payload.destination_harbor_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="destination_harbor_id is required",
+            )
+
+        size_filter(self.db, payload.destination_harbor_id, ship.ship_size)
         self.date_validation(payload.departure_date, payload.arrival_date, payload.estimated_arrival)
 
         voyage = Voyage(**payload.model_dump())
@@ -58,18 +62,49 @@ class VoyageService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Voyage not found")
         return voyage
 
-    def update_dates(self, voyage_id: int, payload: VoyageUpdate) -> Voyage:
-        """"""
+    def update_dates(self, payload: Updatedates) -> Voyage:
+        """Update voyage date fields with basic validation."""
+        
+        data = payload.model_dump(exclude_unset=True)
+        for field, value in data.items():
 
-    def change_destonaton():
-        pass
+            if field == "ship_id":
+                continue
+        setattr(self.voyage, field, value)
+        self.date_validation(self.voyage.departure_date, self.voyage.arrival_date, self.voyage.estimated_arrival)
+        self.db.commit()
+        self.db.refresh(self.voyage)
+        return self.voyage
 
-    def approve_voyage() -> bool:
-        pass
-    
-    def delete_voyage(self, voyage_id: int) -> None:
+    def change_destonaton(self, harbor_id: int, payload: Updatedates):
+        if self.voyage is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Voyage not found")
+
+        ship = self.db.query(Ship).filter(Ship.id == self.voyage.ship_id).first()
+        if not ship:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
+
+        size_filter(self.db, harbor_id, ship.ship_size)
+        self.date_validation(payload.departure_date, payload.arrival_date, payload.estimated_arrival)
+
+        self.voyage.destination_harbor_id = harbor_id
+        if payload.departure_date is not None:
+            self.voyage.departure_date = payload.departure_date
+        if payload.arrival_date is not None:
+            self.voyage.arrival_date = payload.arrival_date
+        if payload.estimated_arrival is not None:
+            self.voyage.estimated_arrival = payload.estimated_arrival
+
+        self.db.commit()
+        self.db.refresh(self.voyage)
+        return self.voyage
+
+    def approve_voyage(self) -> bool:
+        return False
+
+    def delete_voyage(self, voyage_id: int) -> bool:
         """Delete a voyage by id."""
         voyage = self.get_voyage(voyage_id)
         self.db.delete(voyage)
         self.db.commit()
-        return None
+        return True
