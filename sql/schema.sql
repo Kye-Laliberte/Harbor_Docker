@@ -50,7 +50,7 @@ CREATE TABLE if NOT EXISTS docks(
     dock_code INTEGER UNIQUE NOT NULL,
     dock_status dock_status_enum NOT NULL DEFAULT 'active',
     harbor_id INTEGER REFERENCES harbors(id),
-    dock_name TEXT,
+    --dock_name TEXT,
     cargo_capacity INTEGER NOT NULL DEFAULT 0 CHECK (cargo_capacity >= 0),
     dock_size INTEGER NOT NULL CHECK (dock_size IN (1, 2, 3))
 );
