@@ -25,6 +25,10 @@ def get_voyage(voyage_id: int, db: Session = Depends(get_db)):
     """Retrieve a voyage by id."""
     return VoyageService(db=db,v_id=voyage_id).get_voyage(voyage_id)
 
+@router.post("/{voyage_id}/update_destonaton/{harbor_id}/'", status_code=status.HTTP_200_OK)
+def updestination(harbor_id:int, voyage_id:int, payload: Updatedates,db:Session =Depends(get_db)):
+    """"""""
+    VoyageService(db=db,v_id=voyage_id).change_destonaton(harbor_id,payload)
 
 @router.delete("/{voyage_id}/delete", status_code=status.HTTP_204_NO_CONTENT)
 def delete_voyage(voyage_id: int, db: Session = Depends(get_db)):

@@ -2,6 +2,7 @@ from typing import List, Optional
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 import app.enums as enums
@@ -46,12 +47,6 @@ def validate_docking_input(dock_id: int, ship_id: int, arrival_date: datetime, d
     
 def _ends_at(dt: Optional[datetime]) -> datetime:
     """Normalize a datetime to an end-of-range value for overlap comparisons.
-
-    Inputs:
-        dt: Optional datetime to normalize.
-
-    Output:
-        Returns a timezone-aware datetime suitable for interval comparison.
     """
     # Treat None as an open-ended interval to the far future (UTC-aware)
     if dt is None:
@@ -83,23 +78,12 @@ def sev_list_dockings(db: Session, skip: int = 0, limit: int = 100) -> List[Dock
         db: Database session.
         skip: Number of records to skip.
         limit: Maximum number of records to return.
-
-    Output:
-        Returns a list of Docking objects.
     """
     return db.query(Docking).offset(skip).limit(limit).all()
 
 
-def _check_size_compatibility(dock: Dock, ship: Ship):
-    """Check whether a dock can accommodate a ship based on size.
-
-    Inputs:
-        dock: Dock instance being evaluated.
-        ship: Ship instance being evaluated.
-
-    Output:
-        Returns True when the dock size is large enough for the ship.
-    """
+def _check_size_compatibility(dock: Dock, ship: Ship) -> bool:
+    """Check whether a dock can accommodate a ship based on size."""
     # Dock must be able to accommodate ship size (dock size rank >= ship size rank)
     dock_rank = SIZE_RANK.get(enums.VesselSize(dock.dock_size), None)
     ship_rank = SIZE_RANK.get(enums.VesselSize(ship.ship_size), None)
@@ -108,7 +92,8 @@ def _check_size_compatibility(dock: Dock, ship: Ship):
     return dock_rank >= ship_rank
 
 
-def _check_overlaps(db: Session, ship_id: int, dock_id: int, arrival: datetime, departure: Optional[datetime], exclude_id: Optional[int] = None):
+def _check_overlaps(db: Session, ship_id: int, dock_id: int, arrival: datetime, 
+                    departure: Optional[datetime], exclude_id: Optional[int] = None):
     """Ensure a ship and dock do not have overlapping docking windows.
 
     Inputs:
@@ -148,10 +133,7 @@ def sev_create_docking(db: Session, payload: DockingCreate) -> Docking:
 
     Output: Returns the newly created Docking object.
     """
-    # Basic existence checks moved here to keep pydantic models simpler
-  
     validate_docking_input(payload.dock_id, payload.ship_id, payload.arrival_date, payload.departure_date, db)
-
 
     # Validate date ordering and normalize to UTC-aware
     arrival = _ensure_aware_utc(payload.arrival_date)
@@ -159,7 +141,6 @@ def sev_create_docking(db: Session, payload: DockingCreate) -> Docking:
     if departure is not None and departure < arrival:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="arrival_date must be before departure_date")
 
-    # Prevent overlapping dockings for same dock or same ship
     _check_overlaps(db, payload.ship_id, payload.dock_id, arrival, departure)
 
     data = payload.model_dump()
@@ -201,8 +182,15 @@ def sev_delete_docking(db: Session, docking_id: int) -> None:
     db.commit()
     return None
 
+def current_docking(db:Session,ship_id:int):
+    """"""
+def prevous_docking(db:Session,ship_id:int):
+    """"""
 
-        
+def last_docking(db: Session, ship_id:int):
+    """gets last docking of the givin ship"""
+
+    db.execute(text,"""""")
         
 
     
