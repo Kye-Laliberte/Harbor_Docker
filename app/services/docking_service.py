@@ -15,19 +15,45 @@ SIZE_RANK = {
     enums.VesselSize.MEDIUM: 2,
     enums.VesselSize.LARGE: 3,
 }
+class DockingService:
+
+
+    def __init__(self,db:Session,docking_id:int=None):
+        self.db = db
+        self.docking = None
+        if docking_id is not None:
+            self.docking =  self.sev_get_docking(docking_id)
+
+    def sev_list_dockings(self, skip: int = 0, limit: int = 100) -> List[Docking]:
+        """List dockings with optional pagination."""
+        out = self.db.query(Docking).offset(skip).limit(limit).all()
+        return out
+
+    def sev_get_docking(self, docking_id: int) -> Docking:
+        """Retrieve a docking by id or raise an error if it does not exist.
+        Output: Returns the matching Docking object.
+        """
+        docking = self.db.query(Docking).filter(Docking.id == docking_id).first()
+        if not docking:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docking not found")
+        return docking
+
+    def sev_delete_docking(self, docking_id: int) -> bool:
+        """Delete a docking by id.
+        Output:Returns True after the docking has been removed."""
+        
+        if not self.docking:
+            docking = self.sev_get_docking(self.db, docking_id)
+
+            self.docking = docking
+
+        self.db.delete(docking)
+        self.db.commit()
+        return True
 
 
 def validate_docking_input(dock_id: int, ship_id: int, arrival_date: datetime, departure_date: Optional[datetime], db: Session):
-    """Validate docking business rules before creating a docking.
-    Inputs:
-        dock_id: Identifier of the dock being requested.
-        ship_id: Identifier of the ship requesting the docking.
-        arrival_date: Planned arrival timestamp.
-        departure_date: Optional planned departure timestamp.
-        db: Database session used to fetch related records.
-    Output:
-        Returns True when the dock and ship pass all validation checks.
-    """
+    """Validate docking business rules before creating a docking."""
     dock = db.query(Dock).filter(Dock.id == dock_id).first()
     if not dock:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dock not found")
@@ -57,10 +83,8 @@ def _ends_at(dt: Optional[datetime]) -> datetime:
 
 def _ensure_aware_utc(dt: Optional[datetime]) -> Optional[datetime]:
     """Ensure a datetime is timezone-aware in UTC.
-
     Inputs:
         dt: Optional datetime to normalize.
-
     Output:
         Returns the same datetime with UTC timezone information when present, or None.
     """
@@ -69,17 +93,6 @@ def _ensure_aware_utc(dt: Optional[datetime]) -> Optional[datetime]:
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
-
-
-def sev_list_dockings(db: Session, skip: int = 0, limit: int = 100) -> List[Docking]:
-    """List dockings with optional pagination.
-
-    Inputs:
-        db: Database session.
-        skip: Number of records to skip.
-        limit: Maximum number of records to return.
-    """
-    return db.query(Docking).offset(skip).limit(limit).all()
 
 
 def _check_size_compatibility(dock: Dock, ship: Ship) -> bool:
@@ -102,7 +115,7 @@ def _check_overlaps(db: Session, ship_id: int, dock_id: int, arrival: datetime,
         dock_id: Identifier of the dock being checked.
         arrival: Planned arrival datetime.
         departure: Optional planned departure datetime.
-        exclude_id: Optional docking id to ignore during the overlap check.
+        exclude_id: Optional docking_id to ignore during the overlap check.
 
     Output:
         Raises an HTTP 400 error if an overlapping docking is found.
@@ -133,9 +146,6 @@ def sev_create_docking(db: Session, payload: DockingCreate) -> Docking:
 
     Output: Returns the newly created Docking object.
     """
-    validate_docking_input(payload.dock_id, payload.ship_id, payload.arrival_date, payload.departure_date, db)
-
-    # Validate date ordering and normalize to UTC-aware
     arrival = _ensure_aware_utc(payload.arrival_date)
     departure = _ensure_aware_utc(payload.departure_date)
     if departure is not None and departure < arrival:
@@ -148,49 +158,30 @@ def sev_create_docking(db: Session, payload: DockingCreate) -> Docking:
     data["departure_date"] = departure
 
     docking = Docking(**data)
+
+    # Update dock and ship statuses symmetrically: when a ship docks, dock becomes INACTIVE (occupied)
+    dock = db.query(Dock).filter(Dock.id == payload.dock_id).first()
+    ship = db.query(Ship).filter(Ship.id == payload.ship_id).first()
+
+    if dock is None or ship is None:
+        # This should not happen because validate_docking_input already checked existence, but guard anyway
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dock or Ship not found during docking creation")
+
+    dock.dock_status = enums.DockStatus.INACTIVE
+    ship.ship_status = enums.ShipStatus.DOCKED
+
     db.add(docking)
     db.commit()
     db.refresh(docking)
-    return docking
-
-def sev_get_docking(db: Session, docking_id: int) -> Docking:
-    """Retrieve a docking by id or raise an error if it does not exist.
-    Inputs:
-        db: Database session.
-        docking_id: Identifier of the docking to fetch.
-    Output:
-        Returns the matching Docking object.
-    """
-    docking = db.query(Docking).filter(Docking.id == docking_id).first()
-    if not docking:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docking not found")
+    db.refresh(dock)
+    db.refresh(ship)
     return docking
 
 
-def sev_delete_docking(db: Session, docking_id: int) -> None:
-    """Delete a docking by id.
-    Inputs:
-        db: Database session.
-        docking_id: Identifier of the docking to delete.
-    Output:
-        Returns None after the docking has been removed.
-    """
-    docking = sev_get_docking(db, docking_id)
-    if not docking:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docking not found")
-    db.delete(docking)
-    db.commit()
-    return None
 
-def current_docking(db:Session,ship_id:int):
-    """"""
-def prevous_docking(db:Session,ship_id:int):
-    """"""
 
-def last_docking(db: Session, ship_id:int):
-    """gets last docking of the givin ship"""
 
-    db.execute(text,"""""")
-        
+
+
 
     

@@ -21,6 +21,7 @@ CREATE TABLE if NOT EXISTS ships(
     registration_number TEXT UNIQUE NOT NULL,
     cargo_capacity INTEGER NOT NULL CHECK (cargo_capacity >= 0),
     ship_size INTEGER NOT NULL CHECK (ship_size IN (1, 2, 3)),
+    CONSTRAINT chk_cargo_hold_check
     CHECK(current_cargo <= cargo_capacity)
     --current_harbor_id INTEGER REFERENCES (harbor.id) DEFAULT=NULL
 );
@@ -63,5 +64,7 @@ CREATE TABLE if NOT EXISTS dockings(
     departure_date TIMESTAMP WITH TIME ZONE,
     purpose TEXT,
     ship_clearance_status ship_clearance_status_enum DEFAULT 'pending',
+    
+    CONSTRAINT chk_departure_after_arrival 
     CHECK(departure_date IS NULL OR departure_date > arrival_date)
 );
