@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
@@ -8,10 +8,10 @@ from app.services.docking_service import sev_create_docking, DockingService
 router = APIRouter(prefix="/dockings", tags=["dockings"])
 
 
-@router.get("/list", response_model=list[DockingRead])
+@router.get("/list", response_model=list[DockingRead],status_code=status.HTTP_200_OK)
 def list_dockings(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """List dockings with optional pagination."""
-    return DockingService(db=db,docking_id=None).sev_list_dockings(db, skip, limit)
+    return DockingService(db=db,docking_id=None).sev_list_dockings( skip, limit)
 
 
 @router.post("/create", response_model=DockingRead, status_code=status.HTTP_201_CREATED)
@@ -19,8 +19,12 @@ def create_docking(payload: DockingCreate, db: Session = Depends(get_db)):
     """Create a new docking."""
     return sev_create_docking(db, payload)
 
+@router.put("/{docking_id}/arrive/", status_code=status.HTTP_200_OK)
+def dock_at_port(docking_id:int, db:Session =Depends(get_db)):
+    DockingService(db,docking_id=docking_id).status_update(docking_id)
 
-@router.get("/{docking_id}/get", response_model=DockingRead)
+
+@router.get("/{docking_id}/get", response_model=DockingRead,status_code=status.HTTP_200_OK)
 def get_docking(docking_id: int, db: Session = Depends(get_db)):
     """Retrieve a docking by id."""
     return DockingService(dd=db,docking_id=None).sev_get_docking(docking_id)

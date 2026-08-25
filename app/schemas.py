@@ -118,7 +118,7 @@ class VoyageBase(BaseModel):
     travel_status: Optional[enums.VoyageStatus] = enums.VoyageStatus.SCHEDULED
     destination_harbor_id: Optional[int] = None
     departure_harbor_id: int
-    model_config = ConfigDict(from_attributes=True)
+    
 
     @model_validator(mode="after")
     def check_dates(self):
@@ -161,14 +161,14 @@ class DockingBase(BaseModel):
     ship_id: int
     dock_id: int
     arrival_date: datetime
-    departure_date: datetime
+    departure_date: Optional[datetime] = None
     ship_clearance_status: enums.ShipClearanceStatus
     purpose: Optional[str] = None
-    model_config = ConfigDict(from_attributes=True)
+    
 
     @model_validator(mode="after")
     def check_dates(self):
-        if self.arrival_date and self.departure_date:
+        if self.departure_date:
             if self.departure_date < self.arrival_date:
                 raise ValueError("departure_date must be after arrival_date")
         return self
@@ -176,8 +176,7 @@ class DockingBase(BaseModel):
 
 class DockingCreate(DockingBase):
     ship_clearance_status: Optional[enums.ShipClearanceStatus] = enums.ShipClearanceStatus.PENDING
-    departure_date: Optional[datetime] = None
-
+   
 
 class DockingUpdate(BaseModel):
     dock_id: Optional[int] = None

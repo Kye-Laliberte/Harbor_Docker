@@ -7,21 +7,17 @@ from sqlalchemy.orm import Session
 
 import app.enums as enums
 from app.models import Docking, Ship, Dock
-from app.schemas import DockingCreate, DockingUpdate
+from app.schemas import DockingCreate, DockingUpdate,ShipUpdate,DockUpdate
+from app.services.ship_service import sev_update_ship
+from app.services.dock_service import sev_update_dock
 
-
-SIZE_RANK = {
-    enums.VesselSize.SMALL: 1,
-    enums.VesselSize.MEDIUM: 2,
-    enums.VesselSize.LARGE: 3,
-}
 class DockingService:
 
 
-    def __init__(self,db:Session,docking_id:int=None):
+    def __init__(self,db:Session,docking_id:int):
         self.db = db
-        self.docking = None
-        if docking_id is not None:
+        self.docking =None
+        if docking_id:
             self.docking =  self.sev_get_docking(docking_id)
 
     def sev_list_dockings(self, skip: int = 0, limit: int = 100) -> List[Docking]:
@@ -50,6 +46,16 @@ class DockingService:
         self.db.delete(docking)
         self.db.commit()
         return True
+
+    def status_update(self,docking_id:int):
+        """"""
+        if self.docking is None:
+            self.docking = self.sev_get_docking(self.db, docking_id)
+            
+        ship_up = ShipUpdate(ship_status= enums.ShipStatus.DOCKED)
+        dock_up = DockUpdate(dock_status= enums.DockStatus.INACTIVE)
+        sev_update_ship(db=self.db, ship_id=self.docking.ship_id,payload=ship_up)
+        sev_update_dock(db=self.db,dock_id=self.docking.dock_id,payload=dock_up)
 
 
 def validate_docking_input(dock_id: int, ship_id: int, arrival_date: datetime, departure_date: Optional[datetime], db: Session):
@@ -98,8 +104,8 @@ def _ensure_aware_utc(dt: Optional[datetime]) -> Optional[datetime]:
 def _check_size_compatibility(dock: Dock, ship: Ship) -> bool:
     """Check whether a dock can accommodate a ship based on size."""
     # Dock must be able to accommodate ship size (dock size rank >= ship size rank)
-    dock_rank = SIZE_RANK.get(enums.VesselSize(dock.dock_size), None)
-    ship_rank = SIZE_RANK.get(enums.VesselSize(ship.ship_size), None)
+    dock_rank = dock.dock_size
+    ship_rank = ship.ship_size
     if dock_rank is None or ship_rank is None:
         return False
     return dock_rank >= ship_rank
@@ -145,9 +151,17 @@ def sev_create_docking(db: Session, payload: DockingCreate) -> Docking:
         payload: Pydantic payload containing docking details.
 
     Output: Returns the newly created Docking object.
+
+    Side effects:
+    - Marks the associated Dock as INACTIVE (occupied) when a docking is created.
+    - Marks the associated Ship as DOCKED.
     """
     arrival = _ensure_aware_utc(payload.arrival_date)
     departure = _ensure_aware_utc(payload.departure_date)
+    validate_docking_input(payload.dock_id, payload.ship_id, arrival, departure, db)
+
+    # Validate date ordering and normalize to UTC-aware
+    
     if departure is not None and departure < arrival:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="arrival_date must be before departure_date")
 
