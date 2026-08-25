@@ -112,7 +112,7 @@ class ShipRead(ShipBase):
 # voyage schemas
 class VoyageBase(BaseModel):
     ship_id: int
-    departure_date: datetime
+    departure_date: Optional[datetime] = None
     estimated_arrival: datetime
     arrival_date: Optional[datetime] = None
     travel_status: Optional[enums.VoyageStatus] = enums.VoyageStatus.SCHEDULED

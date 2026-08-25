@@ -1,13 +1,85 @@
+import logging
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models import Ship, Voyage
+from app.models import Dock, Docking, Ship, Voyage
 from app.schemas import Updatedates, VoyageCreate
 from app.services.harbor_service import sev_list_docks_above_size as size_filter
-from app.enums import DockStatus, VoyageStatus
+from app.enums import DockStatus, ShipClearanceStatus, ShipStatus, VoyageStatus
 from app.services.harbor_service import sev_get_harbor
+
+logger = logging.getLogger(__name__)
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def leave_dock_for_voyage(db: Session, voyage: Voyage) -> None:
+    """Apply the departure state transition for a voyage."""
+    logger.debug("leave_dock_for_voyage called for voyage id=%s", getattr(voyage, "id", None))
+
+    if voyage is None:
+        logger.error("leave_dock_for_voyage received no voyage")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Voyage is required")
+
+    departed = voyage.travel_status == VoyageStatus.DEPARTED
+    if departed and voyage.departure_date is not None:
+        departure_date = voyage.departure_date
+        if departure_date.tzinfo is None:
+            departure_date = departure_date.replace(tzinfo=timezone.utc)
+        departed = departure_date <= _utcnow()
+
+    if not departed:
+        logger.info("Voyage id=%s is not ready to depart", voyage.id)
+        return
+
+    ship = db.query(Ship).filter(Ship.id == voyage.ship_id).first()
+    if ship is None:
+        logger.warning("Ship id=%s not found for voyage id=%s", voyage.ship_id, voyage.id)
+        return
+
+    ship.ship_status = ShipStatus.SAILING
+    docking = (
+        db.query(Docking)
+        .filter(Docking.ship_id == ship.id)
+        .order_by(Docking.arrival_date.desc()).first())
+    
+    dock = None
+    if docking is not None:
+        if docking.departure_date is None or (
+            voyage.departure_date is not None
+            and docking.departure_date > voyage.departure_date):
+
+            docking.departure_date = voyage.departure_date
+        docking.ship_clearance_status = ShipClearanceStatus.APPROVED
+        dock = db.query(Dock).filter(Dock.id == docking.dock_id).first()
+        if dock is not None:
+            dock.dock_status = DockStatus.ACTIVE
+
+    voyage.travel_status = VoyageStatus.DEPARTED
+
+    try:
+        db.add(ship)
+        if docking is not None:
+            db.add(docking)
+        if dock is not None:
+            db.add(dock)
+        db.add(voyage)
+        db.commit()
+        db.refresh(voyage)
+        db.refresh(ship)
+        if docking is not None:
+            db.refresh(docking)
+    except Exception:
+        logger.exception("Failed to process departure for voyage id=%s", voyage.id)
+        raise
+
+    logger.info("Completed departure for voyage id=%s", voyage.id)
+
 
 class VoyageService:
     """Service class that encapsulates voyage CRUD operations."""
@@ -17,7 +89,6 @@ class VoyageService:
         self.voyage = None
         if v_id:
             self.voyage = self.get_voyage(voyage_id=v_id)
-            
 
     def date_validation(self,departure_date: Optional[object],arrival_date: 
                 Optional[object],estimated_arrival: Optional[object],):
@@ -109,15 +180,6 @@ class VoyageService:
         self.db.refresh(voyage)
         self.voyage = voyage
         return voyage
-
-    def leave_dock(self, ship):
-        """"""
-        if docking.dock is not None:
-            docking.dock.dock_status = DockStatus.ACTIVE
-        
-                # Update ship status to sailing
-        ship.ship_status = ShipStatus.SAILING
-
 
     def get_voyage(self, voyage_id: int) -> Voyage:
         """Fetch a voyage by id or raise 404 if it does not exist."""
