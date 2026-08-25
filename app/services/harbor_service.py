@@ -45,8 +45,12 @@ def sev_list_docks_above_size(db, harbor_id: int, min_size: VesselSize | int, sk
     normalized = _normalize_size(min_size)
     allowed_ranks = [rank for size, rank in SIZE_RANK.items() if rank >= SIZE_RANK[normalized]]
 
-    out = (db.query(Dock).filter(Dock.harbor_id == harbor_id, Dock.dock_size.in_(allowed_ranks), 
-                              Dock.dock_status == "active").offset(skip).limit(limit.all()))
+    out = (db.query(Dock)
+           .filter(Dock.harbor_id == harbor_id, Dock.dock_size.in_(allowed_ranks), Dock.dock_status == "active")
+           .offset(skip)
+           .limit(limit)
+           .all()
+    )
 
     if not out:
         raise HTTPException(
