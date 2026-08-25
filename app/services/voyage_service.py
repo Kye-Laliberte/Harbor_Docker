@@ -39,27 +39,85 @@ class VoyageService:
         return self.db.query(Voyage).offset(skip).limit(limit).all()
 
     def create_voyage(self, payload: VoyageCreate) -> Voyage:
-        """Create a new voyage after validating business rules."""
+        """Create a new voyage after validating business rules.
+
+        Business rules added:
+        - Ship must exist and be currently docked.
+        - Ship must have an active docking (no departure_date) at the provided departure_harbor_id.
+        - On successful creation, the docking.departure_date is set, the ship status is set to SAILING,
+          and the dock's dock_status is set to ACTIVE (ship has left).
+        """
+        from app.models import Docking, Dock
+        from app.enums import ShipStatus
+
         ship = self.db.query(Ship).filter(Ship.id == payload.ship_id).first()
         if not ship:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
-        if payload.destination_harbor_id is None:
+
+        #validats destenatons 
+        h1=sev_get_harbor(db=self.db,harbor_id=payload.destination_harbor_id)
+        h2 =sev_get_harbor(db=self.db,harbor_id=payload.departure_harbor_id)
+        
+        # Ensure ship is currently docked
+        if str(ship.ship_status.value) != ShipStatus.DOCKED.value:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="destination_harbor_id is required",)
+                detail=f"Ship must be docked to start a voyage (current status: {ship.ship_status.value})",
+            )
+
+        # Find current docking (arrival recorded, no departure yet)
+        docking = (
+            self.db.query(Docking).join(Dock)
+            .filter(Docking.ship_id == ship.id, Dock.id == Dock.id, Dock.id == Dock.id)
+            .filter(Docking.departure_date == None).first()
+        )
+
+        # More robust: query docking where ship has no departure_date
+        if docking is None:
+            docking =( self.db.query(Docking)
+                .filter(Docking.ship_id == ship.id,Docking.departure_date == None).first())
+
+            if docking is None:
+                raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ship is not currently docked (no active docking found)",)
+
+        # Confirm the docking's harbor matches the voyage departure harbor
+        if docking.dock is None or docking.dock.harbor_id != payload.departure_harbor_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ship is not located at the specified departure harbor",
+            )
+
 
         size_filter(self.db, payload.destination_harbor_id, ship.ship_size)
         self.date_validation(payload.departure_date, payload.arrival_date, payload.estimated_arrival)
-        
-        
-        
+
         voyage = Voyage(**payload.model_dump())
+
         self.db.add(voyage)
+
+        docking.departure_date = voyage.departure_date
+
+        if docking.dock is not None:
+            docking.dock.dock_status = DockStatus.ACTIVE
+
+        # Update ship status to sailing
+        ship.ship_status = ShipStatus.SAILING
+
         self.db.commit()
         self.db.refresh(voyage)
         self.voyage = voyage
+        return voyage
 
+    def leave_dock(self, ship):
+        """"""
+        if docking.dock is not None:
+            docking.dock.dock_status = DockStatus.ACTIVE
         
+                # Update ship status to sailing
+        ship.ship_status = ShipStatus.SAILING
+
 
     def get_voyage(self, voyage_id: int) -> Voyage:
         """Fetch a voyage by id or raise 404 if it does not exist."""

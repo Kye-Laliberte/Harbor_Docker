@@ -127,7 +127,7 @@ def _check_overlaps(db: Session, ship_id: int, dock_id: int, arrival: datetime,
         Raises an HTTP 400 error if an overlapping docking is found.
     """
     # arrival and departure must be timezone-aware UTC when passed in
-    existing_for_dock = db.query(Docking).filter(Docking.dock_id == dock_id).all()
+    existing_for_dock = db.query(Docking).filter(Docking.dock_id == dock_id,Docking.ship_clearance_status).all()
     existing_for_ship = db.query(Docking).filter(Docking.ship_id == ship_id).all()
 
     def overlaps(a1, d1, a2, d2):
