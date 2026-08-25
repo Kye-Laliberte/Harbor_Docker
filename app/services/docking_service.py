@@ -125,7 +125,80 @@ def sev_delete_docking(db: Session, docking_id: int) -> None:
     return None
 
 
-        
-        
 
-    
+def leave_dock(db: Session, voyage) -> None:
+    """Handle ship leaving its dock when a voyage departs.
+
+    Behavior:
+    - If the voyage travel_status is 'departed', ensure the voyage is marked departed,
+      the ship is set to 'sailing', any active dockings for the ship are closed
+      (departure_date set if missing), and the affected docks are set to 'active'.
+
+    This is tolerant: it only updates fields that are not already in the desired state.
+    """
+    import app.enums as enums
+    from app.models import Docking, Ship, Dock
+
+    # Only act when voyage is departed
+    if voyage is None:
+        return
+    try:
+        current_status = voyage.travel_status
+    except Exception:
+        current_status = None
+
+    if current_status is None or str(current_status.value) != enums.VoyageStatus.DEPARTED.value:
+        return
+
+    ship = db.query(Ship).filter(Ship.id == voyage.ship_id).first()
+    if not ship:
+        # Nothing to do if ship missing
+        return
+
+    # Find any dockings where the ship is still recorded as at-dock (no departure_date)
+    active_dockings = db.query(Docking).filter(Docking.ship_id == ship.id, Docking.departure_date == None).all()
+
+    for docking in active_dockings:
+        # If docking has no departure_date, set it to voyage departure_date
+        if docking.departure_date is None and voyage.departure_date is not None:
+            docking.departure_date = voyage.departure_date
+        # Set ship clearance to APPROVED when leaving (business rule)
+        try:
+            docking.ship_clearance_status = enums.ShipClearanceStatus.APPROVED
+        except Exception:
+            pass
+        # Ensure the dock that hosted this docking is marked active now that ship left
+        if docking.dock is not None:
+            try:
+                docking.dock.dock_status = enums.DockStatus.ACTIVE
+            except Exception:
+                # best-effort: continue
+                pass
+
+    # Set ship status to sailing if not already
+    try:
+        if str(ship.ship_status.value) != enums.ShipStatus.SAILING.value:
+            ship.ship_status = enums.ShipStatus.SAILING
+    except Exception:
+        pass
+
+    # Ensure voyage travel_status is set to departed (idempotent)
+    try:
+        if str(voyage.travel_status.value) != enums.VoyageStatus.DEPARTED.value:
+            voyage.travel_status = enums.VoyageStatus.DEPARTED
+    except Exception:
+        pass
+
+    db.commit()
+    # refresh models if the caller expects them to be up-to-date
+    try:
+        db.refresh(ship)
+        db.refresh(voyage)
+        for docking in active_dockings:
+            db.refresh(docking)
+            if docking.dock is not None:
+                db.refresh(docking.dock)
+    except Exception:
+        pass
+
+    return None
