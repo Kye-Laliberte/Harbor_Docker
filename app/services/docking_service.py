@@ -6,7 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 import app.enums as enums
-from app.models import Docking, Ship, Dock
+from app.models import Docking, Ship, Dock, Voyage
 from app.schemas import DockingCreate, DockingUpdate,ShipUpdate,DockUpdate
 from app.services.ship_service import sev_update_ship
 from app.services.dock_service import sev_update_dock
@@ -83,7 +83,7 @@ def _ends_at(dt: Optional[datetime]) -> datetime:
     # Treat None as an open-ended interval to the far future (UTC-aware)
     if dt is None:
         return datetime.max.replace(tzinfo=timezone.utc)
-    # ensure returned datetime is timezone-aware UTC
+
     return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
 
 
@@ -111,10 +111,23 @@ def _check_size_compatibility(dock: Dock, ship: Ship) -> bool:
     return dock_rank >= ship_rank
 
 
+def _voyage_state(voyage: Voyage, now: datetime) -> str:
+    """Return the operational state used when validating a docking."""
+    if voyage.travel_status in (enums.VoyageStatus.ARRIVED, enums.VoyageStatus.CANCELLED):
+        return "past"
+
+    departure = _ensure_aware_utc(voyage.departure_date)
+    estimated_arrival = _ensure_aware_utc(voyage.estimated_arrival)
+    if estimated_arrival <= now:
+        return "past"
+    if departure > now:
+        return "pending"
+    return "in_progress"
+
+
 def _check_overlaps(db: Session, ship_id: int, dock_id: int, arrival: datetime, 
                     departure: Optional[datetime], exclude_id: Optional[int] = None):
     """Ensure a ship and dock do not have overlapping docking windows.
-
     Inputs:
         db: Database session.
         ship_id: Identifier of the ship being checked.
@@ -126,9 +139,14 @@ def _check_overlaps(db: Session, ship_id: int, dock_id: int, arrival: datetime,
     Output:
         Raises an HTTP 400 error if an overlapping docking is found.
     """
-    # arrival and departure must be timezone-aware UTC when passed in
-    existing_for_dock = db.query(Docking).filter(Docking.dock_id == dock_id,Docking.ship_clearance_status).all()
+    # A docking remains a conflict regardless of its clearance status.
+    existing_for_dock = db.query(Docking).filter(Docking.dock_id == dock_id).all()
     existing_for_ship = db.query(Docking).filter(Docking.ship_id == ship_id).all()
+    now = datetime.now(timezone.utc)
+    proposed_arrival = _ensure_aware_utc(arrival)
+    proposed_departure = _ensure_aware_utc(departure)
+
+    voyages = db.query(Voyage).filter(Voyage.ship_id == ship_id).all()
 
     def overlaps(a1, d1, a2, d2):
         a1 = _ends_at(a1) if a1 is not None else None
@@ -140,8 +158,21 @@ def _check_overlaps(db: Session, ship_id: int, dock_id: int, arrival: datetime,
     for ex in set(existing_for_dock + existing_for_ship):
         if exclude_id is not None and ex.id == exclude_id:
             continue
-        if overlaps(ex.arrival_date, ex.departure_date, arrival, departure):
+        if overlaps(ex.arrival_date, ex.departure_date, proposed_arrival, proposed_departure):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Overlapping docking exists for this ship or dock")
+
+    for voyage in voyages:
+        state = _voyage_state(voyage, now)
+        if state != "past" and overlaps(
+            voyage.departure_date,
+            voyage.estimated_arrival,
+            proposed_arrival,
+            proposed_departure,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Ship has a {state} voyage during the requested docking",
+            )
 
 
 def sev_create_docking(db: Session, payload: DockingCreate) -> Docking:
