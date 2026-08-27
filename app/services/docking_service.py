@@ -62,7 +62,10 @@ class DockingService:
 def validate_docking_input(
     dock_id: int, ship_id: int,
     db: Session,
+    arrivel:datetime,
+    departure:datetime,
     allow_initial_docking: bool = False,
+    
 ):
     """Validate docking business rules before creating a docking."""
     dock = db.query(Dock).filter(Dock.id == dock_id).first()
@@ -91,7 +94,6 @@ def _ends_at(dt: Optional[datetime]) -> datetime:
 
     return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
 
-
 def _ensure_aware_utc(dt: Optional[datetime]) -> Optional[datetime]:
     """Ensure a datetime is timezone-aware in UTC.
     Inputs:
@@ -105,7 +107,6 @@ def _ensure_aware_utc(dt: Optional[datetime]) -> Optional[datetime]:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
 
-
 def _check_size_compatibility(dock: Dock, ship: Ship) -> bool:
     """Check whether a dock can accommodate a ship based on size."""
     # Dock must be able to accommodate ship size (dock size rank >= ship size rank)
@@ -114,7 +115,6 @@ def _check_size_compatibility(dock: Dock, ship: Ship) -> bool:
     if dock_rank is None or ship_rank is None:
         return False
     return dock_rank >= ship_rank
-
 
 def _voyage_state(voyage: Voyage, now: datetime) -> str:
     """Return the operational state used when validating a docking."""
@@ -173,12 +173,10 @@ def _check_overlaps(db: Session, ship_id: int, dock_id: int, arrival: datetime,
             voyage.departure_date,
             voyage.estimated_arrival,
             proposed_arrival,
-            proposed_departure,
-        ):
+            proposed_departure,):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ship has a {state} voyage during the requested docking",
-            )
+                detail=f"Ship has a {state} voyage during the requested docking",)
 
 
 def sev_create_docking(db: Session,payload: DockingCreate,
@@ -198,13 +196,11 @@ def sev_create_docking(db: Session,payload: DockingCreate,
     arrival = _ensure_aware_utc(payload.arrival_date)
     departure = _ensure_aware_utc(payload.departure_date)
     validate_docking_input(
-        payload.dock_id,
-        payload.ship_id,
-        arrival,
-        departure,
-        db,
-        allow_initial_docking=allow_initial_docking,
-    )
+        dock_id=payload.dock_id,
+        ship_id=payload.ship_id,
+        arrivel=arrival,
+        departure=departure,db=db,
+        allow_initial_docking=allow_initial_docking,)
 
     # Validate date ordering and normalize to UTC-aware
     
@@ -237,10 +233,6 @@ def sev_create_docking(db: Session,payload: DockingCreate,
     db.refresh(dock)
     db.refresh(ship)
     return docking
-
-
-
-
 
 
 
