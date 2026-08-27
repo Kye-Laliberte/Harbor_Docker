@@ -21,9 +21,9 @@ def list_ships(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 
 
 @router.post("/new", response_model=ShipRead, status_code=status.HTTP_201_CREATED)
-def add_ship(payload: ShipCreate, db: Session = Depends(get_db)):
+def add_ship(payload: ShipCreate, dock_id: int | None = None, db: Session = Depends(get_db)):
     """Create a ship from the given payload."""
-    return sev_create_ship(db, payload)
+    return sev_create_ship(db, payload, dock_id=dock_id)
 
 
 @router.get("/{ship_id}/get", response_model=ShipRead)

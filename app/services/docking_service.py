@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 import app.enums as enums
 from app.models import Docking, Ship, Dock, Voyage
 from app.schemas import DockingCreate, DockingUpdate,ShipUpdate,DockUpdate
-from app.services.ship_service import sev_update_ship
 from app.services.dock_service import sev_update_dock
 
 class DockingService:
@@ -49,6 +48,8 @@ class DockingService:
 
     def status_update(self,docking_id:int):
         """"""
+        from app.services.ship_service import sev_update_ship
+
         if self.docking is None:
             self.docking = self.sev_get_docking(self.db, docking_id)
             
@@ -58,7 +59,11 @@ class DockingService:
         sev_update_dock(db=self.db,dock_id=self.docking.dock_id,payload=dock_up)
 
 
-def validate_docking_input(dock_id: int, ship_id: int, arrival_date: datetime, departure_date: Optional[datetime], db: Session):
+def validate_docking_input(
+    dock_id: int, ship_id: int,
+    db: Session,
+    allow_initial_docking: bool = False,
+):
     """Validate docking business rules before creating a docking."""
     dock = db.query(Dock).filter(Dock.id == dock_id).first()
     if not dock:
@@ -68,7 +73,7 @@ def validate_docking_input(dock_id: int, ship_id: int, arrival_date: datetime, d
     ship = db.query(Ship).filter(Ship.id == ship_id).first()
     if not ship:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
-    if str(ship.ship_status.value) != enums.ShipStatus.SAILING.value:
+    if not allow_initial_docking and str(ship.ship_status.value) != enums.ShipStatus.SAILING.value:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Ship is not sailing (current status: {ship.ship_status.value})")
     if not _check_size_compatibility(dock, ship):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ship size incompatible with dock size")
@@ -142,6 +147,7 @@ def _check_overlaps(db: Session, ship_id: int, dock_id: int, arrival: datetime,
     # A docking remains a conflict regardless of its clearance status.
     existing_for_dock = db.query(Docking).filter(Docking.dock_id == dock_id).all()
     existing_for_ship = db.query(Docking).filter(Docking.ship_id == ship_id).all()
+
     now = datetime.now(timezone.utc)
     proposed_arrival = _ensure_aware_utc(arrival)
     proposed_departure = _ensure_aware_utc(departure)
@@ -175,11 +181,13 @@ def _check_overlaps(db: Session, ship_id: int, dock_id: int, arrival: datetime,
             )
 
 
-def sev_create_docking(db: Session, payload: DockingCreate) -> Docking:
+def sev_create_docking(db: Session,payload: DockingCreate,
+    allow_initial_docking: bool = False,) -> Docking:
     """Create a new docking after running validation and conflict checks.
     Inputs:
         db: Database session.
         payload: Pydantic payload containing docking details.
+        including arrival_date, departure_date, dock_id, ship_id
 
     Output: Returns the newly created Docking object.
 
@@ -189,7 +197,14 @@ def sev_create_docking(db: Session, payload: DockingCreate) -> Docking:
     """
     arrival = _ensure_aware_utc(payload.arrival_date)
     departure = _ensure_aware_utc(payload.departure_date)
-    validate_docking_input(payload.dock_id, payload.ship_id, arrival, departure, db)
+    validate_docking_input(
+        payload.dock_id,
+        payload.ship_id,
+        arrival,
+        departure,
+        db,
+        allow_initial_docking=allow_initial_docking,
+    )
 
     # Validate date ordering and normalize to UTC-aware
     
@@ -213,7 +228,8 @@ def sev_create_docking(db: Session, payload: DockingCreate) -> Docking:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dock or Ship not found during docking creation")
 
     dock.dock_status = enums.DockStatus.INACTIVE
-    ship.ship_status = enums.ShipStatus.DOCKED
+    if ship.ship_status != enums.ShipStatus.MAINTENANCE:
+        ship.ship_status = enums.ShipStatus.DOCKED
 
     db.add(docking)
     db.commit()

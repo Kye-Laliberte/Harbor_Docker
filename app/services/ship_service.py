@@ -1,18 +1,18 @@
-from typing import List
+from datetime import datetime, timezone
+from typing import List, Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models import Ship
-from app.schemas import ShipCreate, ShipUpdate
-from app.enums import VesselSize
-
+from app.schemas import DockingCreate, ShipCreate, ShipUpdate
+from app.enums import ShipStatus
 def sev_list_ships(db: Session, skip: int = 0, limit: int = 100) -> List[Ship]:
     """Return a paginated list of ships from the database."""
     return db.query(Ship).offset(skip).limit(limit).all()
 
 
-def sev_create_ship(db: Session, payload: ShipCreate) -> Ship:
+def sev_create_ship(db: Session, payload: ShipCreate, dock_id: Optional[int] = None) -> Ship:
     """Create a new ship after validating cargo and registration uniqueness."""
     if payload.current_cargo > payload.cargo_capacity:
         raise HTTPException(
@@ -32,6 +32,24 @@ def sev_create_ship(db: Session, payload: ShipCreate) -> Ship:
     db.add(ship)
     db.commit()
     db.refresh(ship)
+
+    if ship.ship_status in (ShipStatus.DOCKED, ShipStatus.MAINTENANCE):
+        from app.services.docking_service import sev_create_docking
+
+        if dock_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="dock_id is required when creating a docked or maintenance ship",
+            )
+
+        docking_payload = DockingCreate(
+            ship_id=ship.id,
+            dock_id=dock_id,
+            arrival_date=datetime.now(timezone.utc),
+            purpose="initial docking",)
+        
+        sev_create_docking(db, docking_payload, allow_initial_docking=True)
+
     return ship
 
 
