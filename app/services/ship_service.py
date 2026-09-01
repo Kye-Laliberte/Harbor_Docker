@@ -25,22 +25,17 @@ def sev_create_ship(db: Session, payload: ShipCreate, dock_id: Optional[int] = N
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="registration number already exists",
-        )
+            detail="registration number already exists",)
 
     ship = Ship(**payload.model_dump())
-    db.add(ship)
-    db.commit()
-    db.refresh(ship)
-
+    
     if ship.ship_status in (ShipStatus.DOCKED, ShipStatus.MAINTENANCE):
         from app.services.docking_service import sev_create_docking
 
         if dock_id is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="dock_id is required when creating a docked or maintenance ship",
-            )
+                detail="dock_id is required when creating a docked or maintenance ship",)
 
         docking_payload = DockingCreate(
             ship_id=ship.id,
@@ -50,6 +45,9 @@ def sev_create_ship(db: Session, payload: ShipCreate, dock_id: Optional[int] = N
         
         sev_create_docking(db, docking_payload, allow_initial_docking=True)
 
+    db.add(ship)
+    db.commit()
+    db.refresh(ship)
     return ship
 
 
