@@ -27,7 +27,7 @@ def dock_at_port(docking_id:int, db:Session =Depends(get_db)):
 @router.get("/{docking_id}/get", response_model=DockingRead,status_code=status.HTTP_200_OK)
 def get_docking(docking_id: int, db: Session = Depends(get_db)):
     """Retrieve a docking by id."""
-    return DockingService(dd=db,docking_id=None).sev_get_docking(docking_id)
+    return DockingService(db=db,docking_id=None).sev_get_docking(docking_id)
 
 
 @router.delete("/{docking_id}/delete", status_code=status.HTTP_204_NO_CONTENT)

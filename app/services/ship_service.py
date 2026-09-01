@@ -17,8 +17,7 @@ def sev_create_ship(db: Session, payload: ShipCreate, dock_id: Optional[int] = N
     if payload.current_cargo > payload.cargo_capacity:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="current_cargo cannot exceed cargo_capacity",
-        )
+            detail="current_cargo cannot exceed cargo_capacity",)
     
 
     existing = db.query(Ship).filter(Ship.registration_number == payload.registration_number).first()
