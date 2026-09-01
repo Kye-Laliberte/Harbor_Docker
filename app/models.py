@@ -62,7 +62,7 @@ class Harbor(Base):
     __tablename__ = 'harbors'
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
-    timezone = Column(TIMESTAMP(timezone=True), nullable=False)
+    timezone = Column(String(50), nullable=False)
 
     docks = relationship("Dock", back_populates="harbor")
     departing_voyages = relationship("Voyage",

@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 # harbor schemas
 class HarborBase(BaseModel):
     name: str
-    timezone: datetime
+    timezone: str
 
     @field_validator("name")
     @classmethod
@@ -28,7 +28,7 @@ class HarborCreate(HarborBase):
 
 class HarborUpdate(BaseModel):
     name: Optional[str] = None
-    timezone: Optional[datetime] = None
+    timezone: Optional[str] = None
 
 
 # dock schemas
