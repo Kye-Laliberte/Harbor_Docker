@@ -33,16 +33,11 @@ class DockingService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docking not found")
         return docking
 
-    def sev_delete_docking(self, docking_id: int) -> bool:
+    def sev_delete_docking(self) -> bool:
         """Delete a docking by id.
         Output:Returns True after the docking has been removed."""
-        
-        if not self.docking:
-            docking = self.sev_get_docking(self.db, docking_id)
 
-            self.docking = docking
-
-        self.db.delete(docking)
+        self.db.delete(self.docking)
         self.db.commit()
         return True
 
