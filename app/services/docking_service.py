@@ -46,7 +46,7 @@ class DockingService:
         from app.services.ship_service import sev_update_ship
 
         if self.docking is None:
-            self.docking = self.sev_get_docking(self.db, docking_id)
+            self.docking = self.sev_get_docking(docking_id=docking_id)
             
         ship_up = ShipUpdate(ship_status= enums.ShipStatus.DOCKED)
         dock_up = DockUpdate(dock_status= enums.DockStatus.INACTIVE)
@@ -228,9 +228,6 @@ def sev_create_docking(db: Session,payload: DockingCreate,
     db.refresh(dock)
     db.refresh(ship)
     return docking
-
-
-
 
 def leave_dock(db: Session, voyage) -> None:
     """Handle ship leaving its dock when a voyage departs.
