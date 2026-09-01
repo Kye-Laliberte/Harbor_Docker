@@ -75,7 +75,7 @@ class Harbor(Base):
     
 
 class Voyage(Base):
-    __tablename__ = 'voyage'
+    __tablename__ = 'voyages'
     __table_args__ =(
         CheckConstraint('departure_date <= estimated_arrival', name='ck_arival_order_check'),
     )
