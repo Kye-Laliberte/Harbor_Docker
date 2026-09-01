@@ -26,15 +26,17 @@ def get_voyage(voyage_id: int, db: Session = Depends(get_db)):
     return VoyageService(db=db,v_id=voyage_id).get_voyage(voyage_id)
     
 @router.post("/{voyage_id}/update_status", status_code=status.HTTP_200_OK)
-def upstatus(voyage_id:int, db:Session =Depends(get_db)):
-    """"""
+def update_voyage_status(voyage_id:int, db:Session =Depends(get_db)):
+    """Update voyage status and handle departure if applicable."""
     voy = VoyageService(db=db,v_id=voyage_id).get_voyage(voyage_id)
     leave_dock_for_voyage(db,voy)
+    return {"status": "updated", "voyage_id": voyage_id}
 
-@router.post("/{voyage_id}/update_destonaton/{harbor_id}/", status_code=status.HTTP_200_OK)
-def updestination(harbor_id:int, voyage_id:int, payload: Updatedates,db:Session =Depends(get_db)):
-    """updates destenaton harbor for given voyage"""
+@router.post("/{voyage_id}/update_destination/{harbor_id}/", status_code=status.HTTP_200_OK)
+def update_voyage_destination(harbor_id:int, voyage_id:int, payload: Updatedates,db:Session =Depends(get_db)):
+    """Update destination harbor for given voyage."""
     VoyageService(db=db,v_id=voyage_id).change_destonaton(harbor_id,payload)
+    return {"status": "updated", "voyage_id": voyage_id, "new_destination_harbor_id": harbor_id}
 
 @router.delete("/{voyage_id}/delete", status_code=status.HTTP_204_NO_CONTENT)
 def delete_voyage(voyage_id: int, db: Session = Depends(get_db)):

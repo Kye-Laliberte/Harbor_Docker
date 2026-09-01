@@ -109,6 +109,7 @@ class VoyageService:
         """Return a paginated list of voyages."""
         return self.db.query(Voyage).offset(skip).limit(limit).all()
 
+
     def create_voyage(self, payload: VoyageCreate) -> Voyage:
         """Create a new voyage after validating business rules.
 
@@ -126,8 +127,8 @@ class VoyageService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
 
         #validats destenatons 
-        h1=sev_get_harbor(db=self.db,harbor_id=payload.destination_harbor_id)
-        h2 =sev_get_harbor(db=self.db,harbor_id=payload.departure_harbor_id)
+        sev_get_harbor(db=self.db,harbor_id=payload.destination_harbor_id)
+        sev_get_harbor(db=self.db,harbor_id=payload.departure_harbor_id)
         
         # Ensure ship is currently docked
         if str(ship.ship_status.value) != ShipStatus.DOCKED.value:
