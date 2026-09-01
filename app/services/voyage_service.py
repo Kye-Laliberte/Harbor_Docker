@@ -139,15 +139,9 @@ class VoyageService:
         # Find current docking (arrival recorded, no departure yet)
         docking = (
             self.db.query(Docking).join(Dock)
-            .filter(Docking.ship_id == ship.id, Docking.departure_date == None).first()
-        )
+            .filter(Docking.ship_id == ship.id,Docking.departure_date == None).first())  
 
-        # More robust: query docking where ship has no departure_date
         if docking is None:
-            docking =( self.db.query(Docking)
-                .filter(Docking.ship_id == ship.id,Docking.departure_date == None).first())
-
-            if docking is None:
                 raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Ship is not currently docked (no active docking found)",)
