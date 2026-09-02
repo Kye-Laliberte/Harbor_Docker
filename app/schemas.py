@@ -36,7 +36,7 @@ class DockBase(BaseModel):
     dock_code: int
     dock_status: enums.DockStatus
     #dock_name: str
-    cargo_capacity: int = Field(..., ge=0)
+    cargo_capacity: float = Field(..., ge=0)
     harbor_id: int
     dock_size: enums.VesselSize
 
@@ -58,7 +58,7 @@ class DockRead(DockBase):
 class DockUpdate(BaseModel):
     dock_code: Optional[int] = None
     dock_status: Optional[enums.DockStatus] = None
-    cargo_capacity: Optional[int] = Field(None, ge=0)
+    cargo_capacity: Optional[float] = Field(None, ge=0)
     harbor_id: Optional[int] = None
     dock_size: Optional[enums.VesselSize] = None
 
@@ -66,10 +66,10 @@ class DockUpdate(BaseModel):
 # ship schemas
 class ShipBase(BaseModel):
     ship_name: str
-    current_cargo: int = Field(default=0, ge=0)
+    current_cargo: float = Field(default=0, ge=0)
     registration_number: str
     ship_status: enums.ShipStatus
-    cargo_capacity: int = Field(default=0, ge=0)
+    cargo_capacity: float = Field(default=0, ge=0)
     ship_size: enums.VesselSize
 
     @field_validator("ship_name", "registration_number")
@@ -92,10 +92,10 @@ class ShipCreate(ShipBase):
 
 class ShipUpdate(BaseModel):
     ship_name: Optional[str] = None
-    current_cargo: Optional[int] = Field(None, ge=0)
+    current_cargo: Optional[float] = Field(None, ge=0)
     registration_number: Optional[str] = None
     ship_status: Optional[enums.ShipStatus] = None
-    cargo_capacity: Optional[int] = Field(None, ge=0)
+    cargo_capacity: Optional[float] = Field(None, ge=0)
     ship_size: Optional[enums.VesselSize] = None
 
     @field_validator("ship_name", "registration_number")
@@ -119,7 +119,6 @@ class VoyageBase(BaseModel):
     destination_harbor_id: Optional[int] = None
     departure_harbor_id: int
     
-
     @model_validator(mode="after")
     def check_dates(self):
         departure_date = self.departure_date
@@ -165,7 +164,6 @@ class DockingBase(BaseModel):
     ship_clearance_status: enums.ShipClearanceStatus
     purpose: Optional[str] = None
     
-
     @model_validator(mode="after")
     def check_dates(self):
         if self.departure_date:

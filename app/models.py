@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, TIMESTAMP, DateTime, ForeignKey, CheckConstraint, Enum 
+from sqlalchemy import FLOAT, Column, Integer, String, TIMESTAMP, DateTime, ForeignKey, CheckConstraint, Enum 
 from  sqlalchemy.orm import backref, relationship, declarative_base
 from datetime import datetime
 from app.database import Base
@@ -9,10 +9,10 @@ class  Dock(Base):
     __tablename__ = 'docks'
     id = Column(Integer, primary_key=True, index=True)
     dock_code = Column(Integer, unique=True, nullable=False)
-    #dock_name = Column(String(100), nullable=True) # changed 
+    #dock_name = Column(String(100), nullable=True) 
     harbor_id = Column(Integer, ForeignKey('harbors.id'), nullable=False)
     dock_status = Column(Enum(DockStatus,values_callable = lambda enm:[ e.value for e in enm ], name='dock_status_enum', native_enum=True), nullable=False)
-    cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name='ck_dock_minimum_cargo'), nullable=False, default=0)
+    cargo_capacity = Column(FLOAT, CheckConstraint('cargo_capacity >= 0', name='ck_dock_minimum_cargo'), nullable=False, default=0)
     dock_size = Column(Integer, CheckConstraint('dock_size IN (1, 2, 3)', name='ck_dock_size'), nullable=False)
 
     harbor = relationship("Harbor", back_populates="docks")
@@ -31,11 +31,11 @@ class Ship(Base):
     id = Column(Integer, primary_key=True, index=True)
     ship_name = Column(String(100), default='Unknown Ship', nullable=False)
     #captain_id = Column(Integer, ForeignKey('captains.id'), nullable=False)
-    current_cargo = Column(Integer, CheckConstraint('current_cargo >= 0', name='ck_ship_current_cargo'), default=0, nullable=False)
+    current_cargo = Column(FLOAT, CheckConstraint('current_cargo >= 0', name='ck_ship_current_cargo'), default=0, nullable=False)
     registration_number = Column(String(100), unique=True, nullable=False)
     ship_status = Column(Enum(ShipStatus,values_callable = lambda enm:[ e.value for e in enm ], name='ship_status_enum', native_enum=True), default=ShipStatus.DOCKED, nullable=False)
     #captain = relationship("Captain", backref="ships")
-    cargo_capacity = Column(Integer, CheckConstraint('cargo_capacity >= 0', name= 'ck_ship_cargo_capacity'), nullable=False)
+    cargo_capacity = Column(FLOAT, CheckConstraint('cargo_capacity >= 0', name= 'ck_ship_cargo_capacity'), nullable=False)
     ship_size = Column(Integer, CheckConstraint('ship_size IN (1, 2, 3)', name='ck_ship_size'), nullable=False)
 
     voyages = relationship("Voyage", back_populates="ship")
@@ -75,7 +75,7 @@ class Harbor(Base):
     
 
 class Voyage(Base):
-    __tablename__ = 'voyages'
+    __tablename__ = 'voyage'
     __table_args__ =(
         CheckConstraint('departure_date <= estimated_arrival', name='ck_arival_order_check'),
     )
@@ -90,7 +90,7 @@ class Voyage(Base):
     departure_harbor_id = Column(Integer, ForeignKey('harbors.id'),nullable=False)
     destination_harbor_id = Column(Integer,ForeignKey('harbors.id'),nullable=True)
 
-    ship = relationship("Ship", back_populates="voyages")
+    ship = relationship("Ship", back_populates="voyage")
     departure_harbor = relationship(
     "Harbor", foreign_keys=[departure_harbor_id],
     back_populates="departing_voyages")
