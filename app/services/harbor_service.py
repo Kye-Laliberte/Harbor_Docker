@@ -1,11 +1,12 @@
-from typing import List
+from datetime import datetime, timezone
+from typing import Any, List
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.enums import VesselSize
-from app.models import Dock, Harbor
-from app.schemas import HarborCreate, HarborUpdate
+from app.enums import DockStatus, ShipClearanceStatus, ShipStatus, VesselSize, VoyageStatus
+from app.models import Dock, Docking, Harbor, Ship, Voyage
+from app.schemas import DockCreate, DockingCreate, HarborCreate, HarborUpdate
 
 SIZE_RANK = {
     VesselSize.SMALL: 1,
@@ -13,6 +14,13 @@ SIZE_RANK = {
     VesselSize.LARGE: 3,
 }
 
+
+def sev_get_harbor(db: Session, harbor_id: int) -> Harbor:
+    """Fetch a single harbor by its identifier or raise a 404 error."""
+    harbor = db.query(Harbor).filter(Harbor.id == harbor_id).first()
+    if not harbor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Harbor not found")
+    return harbor
 
 def _normalize_size(min_size: VesselSize | int) -> VesselSize:
     """Accept either an enum value or its integer rank and normalize it."""
@@ -31,14 +39,12 @@ def _normalize_size(min_size: VesselSize | int) -> VesselSize:
         detail=f"min_size must be a valid VesselSize value, got {min_size}",
     )
 
-
 def sev_list_active_docks(db, harbor_id: int, skip: int = 0, limit: int = 100) -> List[Dock]:
     """Return a paginated list of active docks for a specific harbor."""
     out= db.query(Dock).filter(Dock.harbor_id == harbor_id, Dock.dock_status == "active").offset(skip).limit(limit).all()
     if not out:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No active docks found for harbor_id {harbor_id}")
     return out
-
 
 def sev_list_docks_above_size(db, harbor_id: int, min_size: VesselSize | int, skip: int = 0, limit: int = 100) -> List[Dock]:
     """Return docks for a harbor that are at or above the requested vessel-size rank."""
@@ -63,7 +69,6 @@ def sev_list_harbors(db: Session, skip: int = 0, limit: int = 100) -> List[Harbo
     """Return a paginated list of harbors from the database."""
     return db.query(Harbor).offset(skip).limit(limit).all()
 
-
 def sev_create_harbor(db: Session, payload: HarborCreate) -> Harbor:
     """Create a new harbor after validating that the name is unique."""
     harbor = Harbor(**payload.model_dump())
@@ -80,17 +85,9 @@ def harbor_active_docks(db: Session, harbor_id: int, dock_size: VesselSize | int
     """Return active docks in the harbor at or above the given size."""
     normalized = _normalize_size(dock_size)
     allowed_ranks = [rank for size, rank in SIZE_RANK.items() if rank >= SIZE_RANK[normalized]]
-    return (
-        db.query(Dock)
-        .filter(Dock.harbor_id == harbor_id, Dock.dock_status == "active", Dock.dock_size.in_(allowed_ranks))
-        .all()
-    )
-def sev_get_harbor(db: Session, harbor_id: int) -> Harbor:
-    """Fetch a single harbor by its identifier or raise a 404 error."""
-    harbor = db.query(Harbor).filter(Harbor.id == harbor_id).first()
-    if not harbor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Harbor not found")
-    return harbor
+
+    return (db.query(Dock).filter(Dock.harbor_id == harbor_id, Dock.dock_status == "active", 
+                                  Dock.dock_size.in_(allowed_ranks)).all())
 
 
 def sev_update_harbor(db: Session, harbor_id: int, payload: HarborUpdate) -> Harbor:
