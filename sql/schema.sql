@@ -17,9 +17,9 @@ CREATE TABLE if NOT EXISTS ships(
 --    captain_id INTEGER  REFERENCES Captain(id),
     ship_status ship_status_enum, NOT NULL, DEFAULT ship_status_enum.docked,
     ship_name Text DEFAULT 'Unknown Ship',
-    current_cargo INTEGER NOT NULL DEFAULT 0 CHECK (current_cargo >= 0),
+    current_cargo FLOAT NOT NULL DEFAULT 0 CHECK (current_cargo >= 0),
     registration_number TEXT UNIQUE NOT NULL,
-    cargo_capacity INTEGER NOT NULL CHECK (cargo_capacity >= 0),
+    cargo_capacity FLOAT NOT NULL CHECK (cargo_capacity >= 0),
     ship_size INTEGER NOT NULL CHECK (ship_size IN (1, 2, 3)),
     CONSTRAINT chk_cargo_hold_check
     CHECK(current_cargo <= cargo_capacity)
@@ -52,7 +52,7 @@ CREATE TABLE if NOT EXISTS docks(
     dock_status dock_status_enum NOT NULL DEFAULT 'active',
     harbor_id INTEGER REFERENCES harbors(id),
     --dock_name TEXT,
-    cargo_capacity INTEGER NOT NULL DEFAULT 0 CHECK (cargo_capacity >= 0),
+    cargo_capacity FLOAT NOT NULL DEFAULT 0 CHECK (cargo_capacity >= 0),
     dock_size INTEGER NOT NULL CHECK (dock_size IN (1, 2, 3))
 );
 
