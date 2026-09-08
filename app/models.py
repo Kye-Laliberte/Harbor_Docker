@@ -63,6 +63,8 @@ class Harbor(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     timezone = Column(String(50), nullable=False)
+    latitude = Column(FLOAT, CheckConstraint('latitude >= -90 AND latitude <= 90', name='ck_harbor_latitude'), nullable=True)
+    longitude = Column(FLOAT, CheckConstraint('longitude >= -180 AND longitude <= 180', name='ck_harbor_longitude'), nullable=True)
 
     docks = relationship("Dock", back_populates="harbor")
     departing_voyages = relationship("Voyage",
@@ -75,7 +77,7 @@ class Harbor(Base):
     
 
 class Voyage(Base):
-    __tablename__ = 'voyage'
+    __tablename__ = 'voyages'
     __table_args__ =(
         CheckConstraint('departure_date <= estimated_arrival', name='ck_arival_order_check'),
     )
@@ -90,7 +92,7 @@ class Voyage(Base):
     departure_harbor_id = Column(Integer, ForeignKey('harbors.id'),nullable=False)
     destination_harbor_id = Column(Integer,ForeignKey('harbors.id'),nullable=True)
 
-    ship = relationship("Ship", back_populates="voyage")
+    ship = relationship("Ship", back_populates="voyages")
     departure_harbor = relationship(
     "Harbor", foreign_keys=[departure_harbor_id],
     back_populates="departing_voyages")
