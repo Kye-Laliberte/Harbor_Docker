@@ -25,7 +25,7 @@ def add_ship(payload: ShipCreate, dock_id: int | None = None, db: Session = Depe
 @router.get("/{ship_id}/get", response_model=ShipRead)
 def get_ship(ship_id: int, db: Session = Depends(get_db)):
     """Retrieve a ship by its id."""
-    return shipService(db=db,ship_id=None).sev_get_ship(ship_id)
+    return shipService(db,ship_id).ship
 
 
 @router.put("/{ship_id}/update", response_model=ShipRead)

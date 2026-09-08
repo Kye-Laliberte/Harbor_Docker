@@ -17,7 +17,7 @@ class shipService:
         self.db = db 
         self.ship = None
         if ship_id:
-            self.sev_get_ship(ship_id)
+            self.ship = self.sev_get_ship(ship_id)
 
     def sev_get_ship(self, ship_id: int) -> Ship:
         """Fetch a ship by id or raise 404 if missing."""
