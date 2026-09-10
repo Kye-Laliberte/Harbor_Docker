@@ -30,11 +30,13 @@ CREATE TABLE if NOT EXISTS ships(
 CREATE TABLE if NOT EXISTS harbors(
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    timezone TIMESTAMP WITH TIME ZONE NOT NULL 
+    timezone TEXT NOT NULL,
+    latitude FLOAT CHECK (latitude >= -90 AND latitude <= 90),
+    longitude FLOAT CHECK (longitude >= -180 AND longitude <= 180)
    -- harbor_status dock_harbor DEFAULT 'inactive' CHECK (harbor_status IN ('active', 'inactive', 'maintenance'))
 );
 
-CREATE TABLE if NOT EXISTS voyage(
+CREATE TABLE if NOT EXISTS voyages(
    id SERIAL PRIMARY KEY,
    ship_id INTEGER NOT NULL REFERENCES ships(id),
    departure_harbor_id INTEGER NOT NULL REFERENCES harbors(id),
@@ -58,6 +60,7 @@ CREATE TABLE if NOT EXISTS docks(
 
 CREATE TABLE if NOT EXISTS dockings(
     id SERIAL PRIMARY KEY,
+    --voyage_id INTEGER REFERENCES voyages(id),
     ship_id INTEGER REFERENCES ships(id),
     dock_id INTEGER REFERENCES docks(id),
     arrival_date TIMESTAMP WITH TIME ZONE NOT NULL,

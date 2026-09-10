@@ -1,4 +1,3 @@
-from email.policy import default
 from typing import Optional
 from datetime import datetime
 
@@ -10,6 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 class HarborBase(BaseModel):
     name: str
     timezone: str
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
 
     @field_validator("name")
     @classmethod
@@ -29,6 +30,8 @@ class HarborCreate(HarborBase):
 class HarborUpdate(BaseModel):
     name: Optional[str] = None
     timezone: Optional[str] = None
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
 
 
 # dock schemas
@@ -113,7 +116,7 @@ class ShipRead(ShipBase):
 class VoyageBase(BaseModel):
     ship_id: int
     departure_date: Optional[datetime] = None
-    estimated_arrival: datetime
+    estimated_arrival: Optional[datetime] = None
     arrival_date: Optional[datetime] = None
     travel_status: Optional[enums.VoyageStatus] = enums.VoyageStatus.SCHEDULED
     destination_harbor_id: Optional[int] = None
@@ -138,7 +141,7 @@ class Updatedates(BaseModel):
     departure_date: Optional[datetime] = None
     arrival_date: Optional[datetime] = None
     travel_status: Optional[enums.VoyageStatus] = None
-    estimated_arrival: datetime
+    estimated_arrival: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
 
     @model_validator(mode="after")
@@ -149,6 +152,26 @@ class Updatedates(BaseModel):
             if arrival_date < departure_date:
                 raise ValueError("arrival_date must be after departure_date")
         return self
+
+
+class VoyageArrivalUpdate(BaseModel):
+    arrival_date: datetime
+
+
+class VoyagePrediction(BaseModel):
+    ship_id: int
+    departure_harbor_id: int
+    destination_harbor_id: int
+    distance_km: float
+    predicted_speed_kmh: float
+    average_voyage_time_hours: float
+    training_samples: int
+    ship_training_samples: int
+    model_trained: bool
+    regression_model: str
+    optimizer: str
+    training_loss: Optional[float] = None
+    epochs_run: int
 
 
 class VoyageRead(VoyageBase):
