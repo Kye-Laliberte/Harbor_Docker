@@ -141,16 +141,20 @@ class VoyageBase(BaseModel):
     estimated_arrival: Optional[datetime] = None
     arrival_date: Optional[datetime] = None
     travel_status: Optional[enums.VoyageStatus] = enums.VoyageStatus.SCHEDULED
-    destination_harbor_id: Optional[int] = None
+    destination_harbor_id: int
     departure_harbor_id: int
     
     @model_validator(mode="after")
     def check_dates(self):
         departure_date = self.departure_date
         arrival_date = self.arrival_date
-        if departure_date and arrival_date:
-            if arrival_date < departure_date:
-                raise ValueError("arrival_date must be after departure_date")
+        departure_date = _as_utc(self.departure_date)
+        arrival_date = _as_utc(self.arrival_date)
+        estimated_arrival = _as_utc(self.estimated_arrival)
+        if departure_date is not None and arrival_date is not None and arrival_date < departure_date:
+            raise ValueError("arrival_date cannot be before departure_date")
+        if departure_date is not None and estimated_arrival is not None and estimated_arrival < departure_date:
+            raise ValueError("estimated_arrival cannot be before departure_date")
         return self
 
 
@@ -159,7 +163,7 @@ class VoyageCreate(VoyageBase):
 
 
 class Updatedates(BaseModel):
-    ship_id: int
+    ship_id: Optional[int] = None
     departure_date: Optional[datetime] = None
     arrival_date: Optional[datetime] = None
     travel_status: Optional[enums.VoyageStatus] = None
@@ -170,9 +174,13 @@ class Updatedates(BaseModel):
     def check_dates(self):
         departure_date = self.departure_date
         arrival_date = self.arrival_date
-        if departure_date is not None and arrival_date is not None:
-            if arrival_date < departure_date:
-                raise ValueError("arrival_date must be after departure_date")
+        departure_date = _as_utc(self.departure_date)
+        arrival_date = _as_utc(self.arrival_date)
+        estimated_arrival = _as_utc(self.estimated_arrival)
+        if departure_date is not None and arrival_date is not None and arrival_date < departure_date:
+            raise ValueError("arrival_date cannot be before departure_date")
+        if departure_date is not None and estimated_arrival is not None and estimated_arrival < departure_date:
+            raise ValueError("estimated_arrival cannot be before departure_date")
         return self
 
 
