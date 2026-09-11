@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-
 from app.dependencies import get_db
-from app.schemas import ShipCreate, ShipUpdate, ShipRead
+from app.schemas import ShipCreate, ShipUpdate, ShipRead,DockingRead
 from app.services.ship_service import shipService, sev_list_ships
+
 
 
 router = APIRouter(prefix="/ships", tags=["ships"])
@@ -18,8 +18,7 @@ def list_ships(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 @router.post("/new", response_model=ShipRead, status_code=status.HTTP_201_CREATED)
 def add_ship(payload: ShipCreate, dock_id: int | None = None, db: Session = Depends(get_db)):
     """Create a ship from the given payload."""
-    return shipService(db=db,ship_id=None).sev_create_ship( payload, dock_id=dock_id)
-
+    return shipService(db=db,ship_id=None).create_ship( payload, dock_id=dock_id)
 
 @router.get("/{ship_id}/get", response_model=ShipRead)
 def get_ship(ship_id: int, db: Session = Depends(get_db)):
@@ -36,5 +35,17 @@ def update_ship(ship_id: int, payload: ShipUpdate, db: Session = Depends(get_db)
 @router.delete("/{ship_id}/delete", status_code=status.HTTP_204_NO_CONTENT)
 def delete_ship(ship_id: int, db: Session = Depends(get_db)):
     """Delete a ship by its id."""
-    shipService(db=db, ship_id=ship_id).sev_delete_ship()
+    shipService(db=db, ship_id=ship_id).delete_ship()
     return None
+
+@router.get("/{ship_id}/last_docking",response_model=DockingRead,status_code=status.HTTP_200_OK)
+def last_docking(ship_id:int,db: Session = Depends(get_db)):
+    """"""
+    
+    # Find current docking (arrival recorded, no departure yet)
+    out=shipService(db,ship_id).curent_dock()
+    
+    return out
+            # Confirm the docking's harbor matches the voyage departure harbor
+    
+   

@@ -51,17 +51,12 @@ def sev_update_dock(db: Session, dock_id: int, payload: DockUpdate) -> Dock:
     return dock
 
 
-def sev_delete_dock(db: Session, dock_id: int) -> None:
-    """Delete a dock by id."""
-    dock = sev_get_dock(db, dock_id)
-    db.delete(dock)
-    db.commit()
-    return None
 
 
 class DockService:
     def __init__(self,db:Session,dock_id):
         self.db=db
+        self.dock_id = dock_id
         self.dock = self.get_dock(dock_id)
 
     def get_dock(self,dock_id) ->Dock:
@@ -90,8 +85,7 @@ class DockService:
         return self.dock
 
     def delete_dock(self) -> None:
-        dock = sev_get_dock(self.dock_id)
-        self.db.delete(dock)
+        self.db.delete(self.dock)
         self.db.commit()
         self.dock = None
         return None
