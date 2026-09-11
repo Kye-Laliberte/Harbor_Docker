@@ -1,8 +1,17 @@
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import app.enums as enums
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+
+def _as_utc(value: Optional[datetime]) -> Optional[datetime]:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 # harbor schemas
@@ -17,36 +26,49 @@ class HarborBase(BaseModel):
     def normalize_name(cls, value: str) -> str:
         return value.strip().lower()
 
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, value: str) -> str:
+        value = value.strip()
+        try:
+            ZoneInfo(value)
+        except ZoneInfoNotFoundError as exc:
+            raise ValueError("timezone must be a valid IANA timezone name") from exc
+        return value
+
 
 class HarborRead(HarborBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
 
 
-class HarborCreate(HarborBase):
-    pass
-
-
 class HarborUpdate(BaseModel):
     name: Optional[str] = None
-    timezone: Optional[datetime] = None
+    timezone: Optional[str] = None
     latitude: Optional[float] = Field(None, ge=-90, le=90)
     longitude: Optional[float] = Field(None, ge=-180, le=180)
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        value = value.strip()
+        try:
+            ZoneInfo(value)
+        except ZoneInfoNotFoundError as exc:
+            raise ValueError("timezone must be a valid IANA timezone name") from exc
+        return value
 
 
 # dock schemas
 class DockBase(BaseModel):
     dock_code: int
     dock_status: enums.DockStatus
-    #dock_name: str
     cargo_capacity: float = Field(..., ge=0)
     harbor_id: int
     dock_size: enums.VesselSize
 
-    """@field_validator("dock_name")
-    @classmethod
-    def normalize(cls, value: str) -> str:
-        return value.strip().lower()"""
 
 
 class DockCreate(DockBase):
