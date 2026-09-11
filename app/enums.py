@@ -27,6 +27,7 @@ class ShipClearanceStatus(str, Enum):
 
 class VoyageStatus(str, Enum):
     SCHEDULED = 'scheduled'
+    APPROVED = 'approved'
     DEPARTED = 'departed'
     ARRIVED = 'arrived'
     CANCELLED = 'cancelled'

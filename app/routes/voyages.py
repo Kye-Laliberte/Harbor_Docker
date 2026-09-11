@@ -14,7 +14,6 @@ def list_voyages(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
     """List voyages with optional pagination."""
     return VoyageService(db=db, v_id=None).list_voyages(skip=skip, limit=limit)
 
-
 @router.post("/create", response_model=VoyageRead, status_code=status.HTTP_201_CREATED)
 def create_voyage(payload: VoyageCreate, db: Session = Depends(get_db)):
     """Create a new voyage."""
@@ -47,6 +46,11 @@ def update_voyage_dates(voyage_id: int, payload: Updatedates, db: Session = Depe
     """Update voyage dates and status with chronological validation."""
     voy =VoyageService(db=db, v_id=voyage_id)
     return voy.update_dates(payload)
+
+@router.post("/{voyage_id}/approve", response_model=VoyageRead, status_code=status.HTTP_200_OK)
+def approve_voyage(voyage_id: int, db: Session = Depends(get_db)):
+    """Approve a scheduled voyage before departure."""
+    return VoyageService(db=db, v_id=voyage_id).approve_voyage()
 
 @router.post("/{voyage_id}/update_status", status_code=status.HTTP_200_OK)
 def update_voyage_status(voyage_id:int, db:Session =Depends(get_db)):

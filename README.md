@@ -105,6 +105,18 @@ Docker-api/
   - `arrival_date`: Actual arrival (null until completed)
 - **Status**: SCHEDULED, DEPARTED, ARRIVED, CANCELLED
 - **Business Rules**: Ship must be DOCKED to start voyage
+
+### Voyage and Docking Lifecycle
+
+1. Create a pending docking with `POST /dockings/create`.
+2. Approve it with `POST /dockings/{docking_id}/approve`.
+3. Enter the ship into the dock with `PUT /dockings/{docking_id}/arrive/`.
+4. Create a scheduled voyage with `POST /voyages/create`.
+5. Approve it with `POST /voyages/{voyage_id}/approve`.
+6. Release the ship with `POST /voyages/{voyage_id}/leave_dock`.
+7. Record arrival with `POST /voyages/{voyage_id}/arrive`; the completed voyage becomes ML training data.
+
+Voyage statuses are `scheduled -> approved -> departed -> arrived`. Docking clearance is `pending -> approved`, and entering the dock changes the ship to `DOCKED` and the dock to `INACTIVE`.
 - **Estimated Arrival**: Calculated from harbor distance and learned ship speed; clients may omit `estimated_arrival`
 
 ## Travel-Time Learning

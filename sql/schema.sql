@@ -9,13 +9,13 @@ CREATE TYPE IF NOT EXISTS dock_status_enum AS ENUM ('active', 'inactive', 'maint
 -- vessel sizes are stored as integer ranks: 1=small, 2=medium, 3=large
 CREATE TYPE IF NOT EXISTS ship_status_enum AS ENUM ('docked', 'sailing', 'maintenance');
 CREATE TYPE IF NOT EXISTS ship_clearance_status_enum AS ENUM ('pending', 'approved', 'denied');
-CREATE TYPE IF NOT EXISTS voyage_status AS ENUM ('scheduled', 'departed', 'arrived', 'cancelled');
+CREATE TYPE IF NOT EXISTS voyage_status AS ENUM ('scheduled', 'approved', 'departed', 'arrived', 'cancelled');
 
 
 CREATE TABLE if NOT EXISTS ships(
     id SERIAL PRIMARY KEY,
 --    captain_id INTEGER  REFERENCES Captain(id),
-    ship_status ship_status_enum, NOT NULL, DEFAULT ship_status_enum.docked,
+    ship_status ship_status_enum NOT NULL DEFAULT 'docked',
     ship_name Text DEFAULT 'Unknown Ship',
     current_cargo FLOAT NOT NULL DEFAULT 0 CHECK (current_cargo >= 0),
     registration_number TEXT UNIQUE NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE if NOT EXISTS ships(
 CREATE TABLE if NOT EXISTS harbors(
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    timezone TIMESTAMP NOT NULL,
+    timezone TEXT NOT NULL,
     latitude FLOAT CHECK (latitude >= -90 AND latitude <= 90),
     longitude FLOAT CHECK (longitude >= -180 AND longitude <= 180)
    -- harbor_status dock_harbor DEFAULT 'inactive' CHECK (harbor_status IN ('active', 'inactive', 'maintenance'))

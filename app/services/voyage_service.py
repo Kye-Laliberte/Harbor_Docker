@@ -27,72 +27,12 @@ def _as_utc(value: Optional[datetime]) -> Optional[datetime]:
     return value.astimezone(timezone.utc)
 
 
-def leave_dock_for_voyage(db: Session, voyage: Voyage) -> None:
-    """Apply the departure state transition for a voyage."""
-    logger.debug("leave_dock_for_voyage called for voyage id=%s", getattr(voyage, "id", None))
-
-    if voyage is None:
-        logger.error("leave_dock_for_voyage received no voyage")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Voyage is required")
-
-    departed = voyage.travel_status == VoyageStatus.DEPARTED
-    if departed and voyage.departure_date is not None:
-        departure_date = _as_utc(voyage.departure_date)
-        departed = departure_date <= _utcnow()
-
-    if not departed:
-        logger.info("Voyage id=%s is not ready to depart", voyage.id)
-        return
-
-    ship = db.query(Ship).filter(Ship.id == voyage.ship_id).first()
-    if ship is None:
-        logger.warning("Ship id=%s not found for voyage id=%s", voyage.ship_id, voyage.id)
-        return
-
-    ship.ship_status = ShipStatus.SAILING
-    docking = (
-        db.query(Docking)
-        .filter(Docking.ship_id == ship.id)
-        .order_by(Docking.arrival_date.desc()).first())
-    
-    dock = None
-    if docking is not None:
-        if docking.departure_date is None or (
-            voyage.departure_date is not None
-            and docking.departure_date > voyage.departure_date):
-
-            docking.departure_date = voyage.departure_date
-        docking.ship_clearance_status = ShipClearanceStatus.APPROVED
-        dock = db.query(Dock).filter(Dock.id == docking.dock_id).first()
-        if dock is not None:
-            dock.dock_status = DockStatus.ACTIVE
-
-    voyage.travel_status = VoyageStatus.DEPARTED
-
-    try:
-        db.add(ship)
-        if docking is not None:
-            db.add(docking)
-        if dock is not None:
-            db.add(dock)
-        db.add(voyage)
-        db.commit()
-        db.refresh(voyage)
-        db.refresh(ship)
-        if docking is not None:
-            db.refresh(docking)
-    except Exception:
-        logger.exception("Failed to process departure for voyage id=%s", voyage.id)
-        raise
-
-    logger.info("Completed departure for voyage id=%s", voyage.id)
-
-
 class VoyageService:
     """Service class that encapsulates voyage CRUD operations."""
 
     def __init__(self, db: Session, v_id: int):
         self.db = db
+        self.voyage = None
         self.ship_sev = shipService(db,ship_id=None)
         if v_id:
             self.voyage = self.get_voyage(voyage_id=v_id)
@@ -125,6 +65,11 @@ class VoyageService:
         """Release the ship's active docking and mark the voyage departed."""
         if self.voyage is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Voyage not found")
+        if self.voyage.travel_status != VoyageStatus.APPROVED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Voyage must be approved before leaving the dock",
+            )
 
         ship = self.ship_sev.ship or self.ship_sev.sev_get_ship(self.voyage.ship_id)
         if ship.ship_status not in (ShipStatus.DOCKED, ShipStatus.SAILING):
@@ -195,9 +140,8 @@ class VoyageService:
         
         # Ensure ship is currently docked
         if str(self.ship_sev.ship.ship_status.value) != ShipStatus.DOCKED.value:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ship must be docked to start a voyage (current status: {self.ship_status.value})",)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                detail=f"Ship must be docked to start a voyage (current status: {self.ship_sev.ship.ship_status.value})",)
 
         # Find current docking (arrival recorded, no departure yet)
         lastdock = self.ship_sev.curent_dock()
@@ -290,6 +234,11 @@ class VoyageService:
     def record_arrival(self, payload: VoyageArrivalUpdate) -> Voyage:
         if self.voyage is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Voyage not found")
+        if self.voyage.travel_status != VoyageStatus.DEPARTED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Voyage must be departed before recording arrival",
+            )
         arrival_date = payload.arrival_date
         departure_date = _as_utc(self.voyage.departure_date)
         arrival_date = _as_utc(arrival_date)
@@ -306,8 +255,17 @@ class VoyageService:
         self.db.refresh(ship)
         return self.voyage
 
-    def approve_voyage(self) -> bool:
-        return False
+    def approve_voyage(self) -> Voyage:
+        if self.voyage is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Voyage not found")
+        if self.voyage.travel_status != VoyageStatus.SCHEDULED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only scheduled voyages can be approved",)
+        self.voyage.travel_status = VoyageStatus.APPROVED
+        self.db.commit()
+        self.db.refresh(self.voyage)
+        return self.voyage
 
     def delete_voyage(self, voyage_id: int) -> bool:
         """Delete a voyage by id."""
