@@ -21,9 +21,9 @@ CREATE TABLE if NOT EXISTS ships(
     registration_number TEXT UNIQUE NOT NULL,
     cargo_capacity FLOAT NOT NULL CHECK (cargo_capacity >= 0),
     ship_size INTEGER NOT NULL CHECK (ship_size IN (1, 2, 3)),
+    --current_harbor_id INTEGER REFERENCES (harbor.id) DEFAULT=NULL,
     CONSTRAINT chk_cargo_hold_check
     CHECK(current_cargo <= cargo_capacity)
-    --current_harbor_id INTEGER REFERENCES (harbor.id) DEFAULT=NULL
 );
 
 

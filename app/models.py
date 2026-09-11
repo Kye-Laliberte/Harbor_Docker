@@ -37,7 +37,6 @@ class Ship(Base):
     #captain = relationship("Captain", backref="ships")
     cargo_capacity = Column(FLOAT, CheckConstraint('cargo_capacity >= 0', name= 'ck_ship_cargo_capacity'), nullable=False)
     ship_size = Column(Integer, CheckConstraint('ship_size IN (1, 2, 3)', name='ck_ship_size'), nullable=False)
-
     voyages = relationship("Voyage", back_populates="ship")
     dockings = relationship("Docking", back_populates="ship")
 
@@ -48,6 +47,7 @@ class Docking(Base):
     )
 
     id = Column(Integer, primary_key=True, index=True)
+    #voyage_id = Column(Integer, ForeignKey('voyages.id'),nullable=True)
     ship_id = Column(Integer, ForeignKey('ships.id'), nullable=False)
     dock_id = Column(Integer, ForeignKey('docks.id'), nullable=False)
     arrival_date = Column(TIMESTAMP(timezone=True), nullable=False)
@@ -55,6 +55,7 @@ class Docking(Base):
     ship_clearance_status = Column(Enum(ShipClearanceStatus,values_callable = lambda enm:[ e.value for e in enm ], name='ship_clearance_status_enum', native_enum=True), default=ShipClearanceStatus.PENDING, nullable=False)
     purpose = Column(String(200), nullable=True)
 
+    #voyage = relationship("voyages", back_populates="dockings")
     ship = relationship("Ship", back_populates="dockings")
     dock = relationship("Dock", back_populates="dockings")
 

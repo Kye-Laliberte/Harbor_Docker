@@ -26,7 +26,7 @@ def create_harbor(payload: HarborCreate, db: Session = Depends(get_db)):
 @router.get("/{harbor_id}/get", response_model=HarborRead)
 def get_harbor(harbor_id: int, db: Session = Depends(get_db)):
     """Retrieve a single harbor by its identifier."""
-    return HarborService(db).get_harbor(harbor_id)
+    return HarborService(db).get_harbor(harbor_id).harbor
 
 
 

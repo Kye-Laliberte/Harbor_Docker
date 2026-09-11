@@ -7,11 +7,11 @@ from sqlalchemy.orm import Session
 
 import app.enums as enums
 from app.models import Docking, Ship, Dock, Voyage
-from app.schemas import DockingCreate, DockingUpdate,ShipUpdate,DockUpdate
-from app.services.dock_service import sev_update_dock
+from app.schemas import DockingCreate,ShipUpdate,DockUpdate
+from app.services.ship_service import shipService
+
 
 class DockingService:
-
 
     def __init__(self,db:Session,docking_id:int):
         self.db = db
