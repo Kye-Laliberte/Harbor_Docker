@@ -122,9 +122,9 @@ class HarborService:
     def __init__(self, db: Session):
         self.db = db
     def get_harbor(self, harbor_id: int) -> Harbor:
-        return sev_get_harbor(self.db, harbor_id)
+        return sev_get_harbor(db=self.db, harbor_id=harbor_id)
 
-    def list_harbors(self, skip: int = 0, limit: int = 100) -> List[Harbor]:
+    def all_harbors(self, skip: int = 0, limit: int = 100) -> List[Harbor]:
         """Return a paginated list of harbors from the database."""
         return self.db.query(Harbor).offset(skip).limit(limit).all()
 
@@ -134,8 +134,6 @@ class HarborService:
     def update_harbor(self, harbor_id: int, payload: HarborUpdate) -> Harbor:
         return sev_update_harbor(self.db, harbor_id, payload)
 
-    def delete_harbor(self, harbor_id: int) -> None:
-        sev_delete_harbor(self.db, harbor_id)
 
 
 class HarborOperations:

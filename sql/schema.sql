@@ -30,7 +30,7 @@ CREATE TABLE if NOT EXISTS ships(
 CREATE TABLE if NOT EXISTS harbors(
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    timezone TEXT NOT NULL,
+    timezone TIMESTAMP NOT NULL,
     latitude FLOAT CHECK (latitude >= -90 AND latitude <= 90),
     longitude FLOAT CHECK (longitude >= -180 AND longitude <= 180)
    -- harbor_status dock_harbor DEFAULT 'inactive' CHECK (harbor_status IN ('active', 'inactive', 'maintenance'))

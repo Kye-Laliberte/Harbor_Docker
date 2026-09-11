@@ -76,6 +76,7 @@ Docker-api/
 
 ### Harbor
 - **Location**: Name and timezone identifier (e.g., "UTC", "America/New_York")
+- **Coordinates**: Optional latitude and longitude for route-distance calculations; both are required before creating a voyage
 - **Infrastructure**: Multiple docks per harbor
 - **Voyage Relationships**: Departure and destination points
 - **Timezone Handling**: All operations respect harbor-specific timezones
@@ -104,6 +105,11 @@ Docker-api/
   - `arrival_date`: Actual arrival (null until completed)
 - **Status**: SCHEDULED, DEPARTED, ARRIVED, CANCELLED
 - **Business Rules**: Ship must be DOCKED to start voyage
+- **Estimated Arrival**: Calculated from harbor distance and learned ship speed; clients may omit `estimated_arrival`
+
+## Travel-Time Learning
+
+Completed voyages are supervised training samples. When `POST /voyages/{voyage_id}/arrive` records an actual arrival, the API adds that voyage's observed distance-over-time speed to the training set. New predictions use a linear regression over route distance, vessel size, and ship identity. Known ships receive a learned ship-specific effect; unseen ships fall back to the shared distance-and-size model. The model is calculated from voyage history and is not persisted on the `ships` table. Harbor coordinates are stored in `latitude` and `longitude`.
 
 ## 📊 Enumerations Reference
 
@@ -191,6 +197,14 @@ GET    /voyages/{voyage_id}/get         Get voyage details
 PUT    /voyages/{voyage_id}/update      Update voyage
 DELETE /voyages/{voyage_id}/delete      Delete voyage
 ```
+
+Prediction endpoint:
+
+```text
+GET /voyages/predict?ship_id=1&departure_harbor_id=1&destination_harbor_id=2
+```
+
+The response contains predicted ship speed in km/h, route distance in km, and average voyage time in hours. Completed voyages recorded through `POST /voyages/{voyage_id}/arrive` provide the supervised training samples. Before valid training data exists, `model_trained` is `false` and the API uses a 20 km/h cold-start baseline.
 
 ## ⚙️ Business Rules & Constraints
 

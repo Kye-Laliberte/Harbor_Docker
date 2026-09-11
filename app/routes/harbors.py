@@ -14,7 +14,7 @@ router = APIRouter(prefix="/harbors", tags=["harbors"])
 @router.get("/home", response_model=list[HarborRead])
 def list_harbors(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """List all harbors with optional pagination."""
-    return HarborService(db).list_harbors(skip=skip, limit=limit)
+    return HarborService(db).all_harbors(skip=skip, limit=limit)
 
 
 @router.post("/new", response_model=HarborRead, status_code=status.HTTP_201_CREATED)
@@ -26,8 +26,7 @@ def create_harbor(payload: HarborCreate, db: Session = Depends(get_db)):
 @router.get("/{harbor_id}/get", response_model=HarborRead)
 def get_harbor(harbor_id: int, db: Session = Depends(get_db)):
     """Retrieve a single harbor by its identifier."""
-    return HarborService(db).get_harbor(harbor_id).harbor
-
+    return HarborService(db).get_harbor(harbor_id)
 
 
 @router.get("/{harbor_id}/active_docks", response_model=list[DockRead])
@@ -51,11 +50,11 @@ def get_docks_above_size(harbor_id: int, min_size: enums.VesselSize, skip: int =
 @router.put("/{harbor_id}/update", response_model=HarborRead, status_code=status.HTTP_200_OK)
 def update_harbor(harbor_id: int, payload: HarborUpdate, db: Session = Depends(get_db)):
     """Update the details for an existing harbor."""
-    return HarborService(db).update_harbor(harbor_id, payload)
+    return HarborOperations(db,harbor_id).update_harbor(payload)
 
 
 @router.delete("/{harbor_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_harbor(harbor_id: int, db: Session = Depends(get_db)):
     """Delete a harbor when it has no attached docks."""
-    HarborService(db).delete_harbor(harbor_id)
+    HarborOperations(db,harbor_id).delete_harbor()
     return None

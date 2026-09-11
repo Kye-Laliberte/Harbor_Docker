@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 # harbor schemas
 class HarborBase(BaseModel):
     name: str
-    timezone: str
+    timezone: datetime
     latitude: Optional[float] = Field(None, ge=-90, le=90)
     longitude: Optional[float] = Field(None, ge=-180, le=180)
 
@@ -29,7 +29,7 @@ class HarborCreate(HarborBase):
 
 class HarborUpdate(BaseModel):
     name: Optional[str] = None
-    timezone: Optional[str] = None
+    timezone: Optional[datetime] = None
     latitude: Optional[float] = Field(None, ge=-90, le=90)
     longitude: Optional[float] = Field(None, ge=-180, le=180)
 
