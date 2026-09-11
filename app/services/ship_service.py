@@ -78,7 +78,6 @@ class shipService:
         self.db.commit()
         self.db.refresh(self.ship)
         return self.ship
-    
 
     def sev_delete_ship(self) -> None:
         """Delete a ship by id."""

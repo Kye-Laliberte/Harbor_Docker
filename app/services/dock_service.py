@@ -57,3 +57,41 @@ def sev_delete_dock(db: Session, dock_id: int) -> None:
     db.delete(dock)
     db.commit()
     return None
+
+
+class DockService:
+    def __init__(self,db:Session,dock_id):
+        self.db=db
+        self.dock = self.get_dock(dock_id)
+
+    def get_dock(self,dock_id) ->Dock:
+        """Fetch a dock by id or raise 404 if missing."""
+        dock = self.db.query(Dock).filter(Dock.id == dock_id).first()
+        if not dock:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dock not found")
+        return dock
+
+    def update_dock(self, payload: DockUpdate) -> Dock:
+        """Update an existing dock with provided fields."""
+        if not self.dock:
+            self.dock = sev_get_dock(self.db, self.dock.id)
+        data = payload.model_dump(exclude_unset=True)
+
+        if data.get("harbor_id") is not None:
+            harbor = self.db.query(Harbor).filter(Harbor.id == data["harbor_id"]).first()
+            if not harbor:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Harbor not found")
+
+        for field, value in data.items():
+            setattr(self.dock, field, value)
+
+        self.db.commit()
+        self.db.refresh(self.dock)
+        return self.dock
+
+    def delete_dock(self) -> None:
+        dock = sev_get_dock(self.dock_id)
+        self.db.delete(dock)
+        self.db.commit()
+        self.dock = None
+        return None
