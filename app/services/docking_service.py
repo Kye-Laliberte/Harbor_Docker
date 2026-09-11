@@ -9,7 +9,7 @@ import app.enums as enums
 from app.models import Docking, Ship, Dock, Voyage
 from app.schemas import DockingCreate,ShipUpdate,DockUpdate
 from app.services.ship_service import shipService
-
+from app.services.dock_service import sev_update_dock, sev_get_dock
 
 class DockingService:
 
@@ -43,39 +43,29 @@ class DockingService:
 
     def status_update(self,docking_id:int):
         """"""
-        from app.services.ship_service import sev_update_ship
-
         if self.docking is None:
             self.docking = self.sev_get_docking(docking_id=docking_id)
             
         ship_up = ShipUpdate(ship_status= enums.ShipStatus.DOCKED)
         dock_up = DockUpdate(dock_status= enums.DockStatus.INACTIVE)
-        sev_update_ship(db=self.db, ship_id=self.docking.ship_id,payload=ship_up)
+        shipService(db=self.db,ship_id=self.docking.ship_id).sev_update_ship(payload=ship_up)
         sev_update_dock(db=self.db,dock_id=self.docking.dock_id,payload=dock_up)
 
-
-def validate_docking_input(
-    dock_id: int, ship_id: int,
-    db: Session,
-    arrivel:datetime,
-    departure:datetime,
-    allow_initial_docking: bool = False,
-    
-):
+def validate_docking_input(dock_id: int, ship_id: int,db: Session,
+    arrivel:datetime,departure:datetime,allow_initial_docking: bool = False,):
     """Validate docking business rules before creating a docking."""
-    dock = db.query(Dock).filter(Dock.id == dock_id).first()
-    if not dock:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dock not found")
+
+    dock=sev_get_dock(db=db,dock_id=dock_id)
     if str(dock.dock_status.value) != enums.DockStatus.ACTIVE.value:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Dock is not active for new dockings (current status: {dock.dock_status.value})")
-    ship = db.query(Ship).filter(Ship.id == ship_id).first()
-    if not ship:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
+
+    ship = shipService(db=db,ship_id=ship_id).ship
     if not allow_initial_docking and str(ship.ship_status.value) != enums.ShipStatus.SAILING.value:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Ship is not sailing (current status: {ship.ship_status.value})")
+
     if not _check_size_compatibility(dock, ship):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ship size incompatible with dock size")
-    # Cargo capacity rule: dock must be able to accept ship's current cargo
+   
     if dock.cargo_capacity is not None and ship.current_cargo is not None and dock.cargo_capacity < ship.current_cargo:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Dock cannot accept ship's current cargo based on capacity")
     return True

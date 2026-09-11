@@ -6,10 +6,11 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models import Dock, Docking, Ship, Voyage
-from app.schemas import Updatedates, VoyageCreate
+from app.schemas import Updatedates, VoyageArrivalUpdate, VoyageCreate
 from app.services.harbor_service import sev_list_docks_above_size as size_filter
 from app.enums import DockStatus, ShipClearanceStatus, ShipStatus, VoyageStatus
 from app.services.harbor_service import sev_get_harbor
+from app.services.travel_time_service import estimate_arrival
 
 logger = logging.getLogger(__name__)
 
@@ -126,9 +127,17 @@ class VoyageService:
         if not ship:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
 
-        #validats destenatons 
-        sev_get_harbor(db=self.db,harbor_id=payload.destination_harbor_id)
-        sev_get_harbor(db=self.db,harbor_id=payload.departure_harbor_id)
+        if payload.destination_harbor_id is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="destination_harbor_id is required")
+        destination = sev_get_harbor(db=self.db, harbor_id=payload.destination_harbor_id)
+        departure_harbor = sev_get_harbor(db=self.db, harbor_id=payload.departure_harbor_id)
+        if None in (
+            departure_harbor.latitude,
+            departure_harbor.longitude,
+            destination.latitude,
+            destination.longitude,):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                detail="departure and destination harbors must have latitude and longitude",)
         
         # Ensure ship is currently docked
         if str(ship.ship_status.value) != ShipStatus.DOCKED.value:
@@ -156,9 +165,13 @@ class VoyageService:
 
 
         size_filter(self.db, payload.destination_harbor_id, ship.ship_size)
-        self.date_validation(payload.departure_date, payload.arrival_date, payload.estimated_arrival)
+        departure_date = payload.departure_date or _utcnow()
+        estimated_arrival, _, _ = estimate_arrival(self.db, ship, departure_harbor, destination, departure_date)
+        self.date_validation(departure_date, payload.arrival_date, estimated_arrival)
 
-        voyage = Voyage(**payload.model_dump())
+        data = payload.model_dump()
+        data.update(departure_date=departure_date, estimated_arrival=estimated_arrival, arrival_date=None)
+        voyage = Voyage(**data)
 
         self.db.add(voyage)
 
@@ -205,18 +218,47 @@ class VoyageService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
 
         size_filter(self.db, harbor_id, ship.ship_size)
-        self.date_validation(payload.departure_date, payload.arrival_date, payload.estimated_arrival)
+        destination = sev_get_harbor(self.db, harbor_id)
+        departure_harbor = sev_get_harbor(self.db, self.voyage.departure_harbor_id)
+        if None in (
+            departure_harbor.latitude,
+            departure_harbor.longitude,
+            destination.latitude,
+            destination.longitude,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="departure and destination harbors must have latitude and longitude",
+            )
+        departure_date = payload.departure_date or self.voyage.departure_date or _utcnow()
+        estimated_arrival, _, _ = estimate_arrival(self.db, ship, departure_harbor, destination, departure_date)
+        self.date_validation(departure_date, payload.arrival_date, estimated_arrival)
 
         self.voyage.destination_harbor_id = harbor_id
-        if payload.departure_date is not None:
-            self.voyage.departure_date = payload.departure_date
+        self.voyage.departure_date = departure_date
         if payload.arrival_date is not None:
             self.voyage.arrival_date = payload.arrival_date
-        if payload.estimated_arrival is not None:
-            self.voyage.estimated_arrival = payload.estimated_arrival
+        self.voyage.estimated_arrival = estimated_arrival
 
         self.db.commit()
         self.db.refresh(self.voyage)
+        return self.voyage
+
+    def record_arrival(self, payload: VoyageArrivalUpdate) -> Voyage:
+        if self.voyage is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Voyage not found")
+        arrival_date = payload.arrival_date
+        if self.voyage.departure_date and arrival_date < self.voyage.departure_date:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="arrival_date cannot be before departure_date")
+        ship = self.db.query(Ship).filter(Ship.id == self.voyage.ship_id).first()
+        if ship is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
+        self.voyage.arrival_date = arrival_date
+        self.voyage.travel_status = VoyageStatus.ARRIVED
+        ship.ship_status = ShipStatus.DOCKED
+        self.db.commit()
+        self.db.refresh(self.voyage)
+        self.db.refresh(ship)
         return self.voyage
 
     def approve_voyage(self) -> bool:
