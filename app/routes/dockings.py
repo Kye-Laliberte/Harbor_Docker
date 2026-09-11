@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
-from app.schemas import DockingRead, DockingCreate, DockingUpdate
+from app.schemas import DockingRead, DockingCreate
 from app.services.docking_service import sev_create_docking, DockingService
 
 router = APIRouter(prefix="/dockings", tags=["dockings"])

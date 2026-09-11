@@ -6,7 +6,7 @@ from app.schemas import VoyageArrivalUpdate, VoyageCreate, VoyagePrediction, Voy
 from app.services.harbor_service import sev_get_harbor
 from app.services.travel_time_service import predict_voyage_metrics
 from app.services.voyage_service import VoyageService, leave_dock_for_voyage
-
+from app.services.harbor_service import HarborService
 router = APIRouter(prefix="/voyages", tags=["voyages"])
 
 
@@ -24,21 +24,17 @@ def create_voyage(payload: VoyageCreate, db: Session = Depends(get_db)):
     return voyage
 
 @router.get("/predict", response_model=VoyagePrediction)
-def predict_voyage(
-    ship_id: int,
-    departure_harbor_id: int,
-    destination_harbor_id: int,
-    db: Session = Depends(get_db),
-):
+def predict_voyage(ship_id: int,departure_harbor_id: int,destination_harbor_id: int,db: Session = Depends(get_db),):
     """Predict ship speed and average voyage time from completed voyages."""
+
     ship = db.query(Ship).filter(Ship.id == ship_id).first()
     if ship is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
-    origin = sev_get_harbor(db, departure_harbor_id)
-    destination = sev_get_harbor(db, destination_harbor_id)
+    HarborS = HarborService(db)
+    origin = HarborS.get_harbor(departure_harbor_id)
+    destination = HarborS.get_harbor(db, destination_harbor_id)
     if None in (origin.latitude, origin.longitude, destination.latitude, destination.longitude):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
             detail="both harbors must have latitude and longitude",)
 
     return predict_voyage_metrics(db, ship, origin, destination)

@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
 from app.schemas import ShipCreate, ShipUpdate, ShipRead
-from app.models import Ship
 from app.services.ship_service import shipService, sev_list_ships
 
 
