@@ -3,10 +3,9 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_db
 from app.models import Ship
 from app.schemas import VoyageArrivalUpdate, VoyageCreate, VoyagePrediction, VoyageRead, Updatedates
-from app.services.harbor_service import sev_get_harbor
-from app.services.travel_time_service import predict_voyage_metrics
-from app.services.voyage_service import VoyageService, leave_dock_for_voyage
 from app.services.harbor_service import HarborService
+from app.services.travel_time_service import predict_voyage_metrics
+from app.services.voyage_service import VoyageService
 router = APIRouter(prefix="/voyages", tags=["voyages"])
 
 
@@ -20,7 +19,6 @@ def list_voyages(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
 def create_voyage(payload: VoyageCreate, db: Session = Depends(get_db)):
     """Create a new voyage."""
     voyage = VoyageService(db=db, v_id=None).create_voyage(payload)
-    leave_dock_for_voyage(db, voyage)
     return voyage
 
 @router.get("/predict", response_model=VoyagePrediction)
@@ -30,9 +28,9 @@ def predict_voyage(ship_id: int,departure_harbor_id: int,destination_harbor_id: 
     ship = db.query(Ship).filter(Ship.id == ship_id).first()
     if ship is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
-    HarborS = HarborService(db)
-    origin = HarborS.get_harbor(departure_harbor_id)
-    destination = HarborS.get_harbor(db, destination_harbor_id)
+    harbor_service = HarborService(db)
+    origin = harbor_service.get_harbor(departure_harbor_id)
+    destination = harbor_service.get_harbor(destination_harbor_id)
     if None in (origin.latitude, origin.longitude, destination.latitude, destination.longitude):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
             detail="both harbors must have latitude and longitude",)
@@ -43,13 +41,23 @@ def predict_voyage(ship_id: int,departure_harbor_id: int,destination_harbor_id: 
 def get_voyage(voyage_id: int, db: Session = Depends(get_db)):
     """Retrieve a voyage by id."""
     return VoyageService(db=db,v_id=voyage_id).get_voyage(voyage_id)
-    
+
+@router.put("/{voyage_id}/update_dates", response_model=VoyageRead, status_code=status.HTTP_200_OK)
+def update_voyage_dates(voyage_id: int, payload: Updatedates, db: Session = Depends(get_db)):
+    """Update voyage dates and status with chronological validation."""
+    voy =VoyageService(db=db, v_id=voyage_id)
+    return voy.update_dates(payload)
+
 @router.post("/{voyage_id}/update_status", status_code=status.HTTP_200_OK)
 def update_voyage_status(voyage_id:int, db:Session =Depends(get_db)):
     """Update voyage status and handle departure if applicable."""
-    voy = VoyageService(db=db,v_id=voyage_id).get_voyage(voyage_id)
-    leave_dock_for_voyage(db,voy)
-    return {"status": "updated", "voyage_id": voyage_id}
+    voyage = VoyageService(db=db, v_id=voyage_id).leave_dock()
+    return {"status": "updated", "voyage_id": voyage.id}
+
+@router.post("/{voyage_id}/leave_dock", response_model=VoyageRead, status_code=status.HTTP_200_OK)
+def leave_voyage_dock(voyage_id: int, db: Session = Depends(get_db)):
+    """Release the ship from its dock and mark the voyage departed."""
+    return VoyageService(db=db, v_id=voyage_id).leave_dock()
 
 @router.post("/{voyage_id}/update_destination/{harbor_id}/", status_code=status.HTTP_200_OK)
 def update_voyage_destination(harbor_id:int, voyage_id:int, payload: Updatedates,db:Session =Depends(get_db)):

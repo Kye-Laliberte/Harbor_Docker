@@ -11,12 +11,20 @@ from app.services.harbor_service import sev_list_docks_above_size as size_filter
 from app.enums import DockStatus, ShipClearanceStatus, ShipStatus, VoyageStatus
 from app.services.harbor_service import sev_get_harbor
 from app.services.travel_time_service import estimate_arrival
-
+from app.services.ship_service import shipService
 logger = logging.getLogger(__name__)
 
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _as_utc(value: Optional[datetime]) -> Optional[datetime]:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 def leave_dock_for_voyage(db: Session, voyage: Voyage) -> None:
@@ -29,9 +37,7 @@ def leave_dock_for_voyage(db: Session, voyage: Voyage) -> None:
 
     departed = voyage.travel_status == VoyageStatus.DEPARTED
     if departed and voyage.departure_date is not None:
-        departure_date = voyage.departure_date
-        if departure_date.tzinfo is None:
-            departure_date = departure_date.replace(tzinfo=timezone.utc)
+        departure_date = _as_utc(voyage.departure_date)
         departed = departure_date <= _utcnow()
 
     if not departed:
@@ -87,13 +93,18 @@ class VoyageService:
 
     def __init__(self, db: Session, v_id: int):
         self.db = db
-        self.voyage = None
+        self.ship_sev = shipService(db,ship_id=None)
         if v_id:
             self.voyage = self.get_voyage(voyage_id=v_id)
+            self.ship_sev.ship = self.ship_sev.sev_get_ship(ship_id=self.voyage.ship_id)
 
     def date_validation(self,departure_date: Optional[object],arrival_date: 
                 Optional[object],estimated_arrival: Optional[object],):
         """Validate the chronological order of voyage dates."""
+
+        departure_date = _as_utc(departure_date)
+        arrival_date = _as_utc(arrival_date)
+        estimated_arrival = _as_utc(estimated_arrival)
 
         if arrival_date is not None and departure_date is not None and arrival_date < departure_date:
             raise HTTPException(
@@ -110,6 +121,49 @@ class VoyageService:
         """Return a paginated list of voyages."""
         return self.db.query(Voyage).offset(skip).limit(limit).all()
 
+    def leave_dock(self) -> Voyage:
+        """Release the ship's active docking and mark the voyage departed."""
+        if self.voyage is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Voyage not found")
+
+        ship = self.ship_sev.ship or self.ship_sev.sev_get_ship(self.voyage.ship_id)
+        if ship.ship_status not in (ShipStatus.DOCKED, ShipStatus.SAILING):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Ship cannot leave dock while {ship.ship_status.value}",
+            )
+
+        docking = (
+            self.db.query(Docking)
+            .filter(Docking.ship_id == ship.id, Docking.departure_date.is_(None))
+            .order_by(Docking.arrival_date.desc())
+            .first())
+        
+        if docking is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ship is not currently docked",
+            )
+
+        departure_date = _as_utc(self.voyage.departure_date) or _utcnow()
+        if departure_date > _utcnow():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Voyage departure_date is in the future",
+            )
+
+        docking.departure_date = departure_date
+        docking.ship_clearance_status = ShipClearanceStatus.APPROVED
+        if docking.dock is not None:
+            docking.dock.dock_status = DockStatus.ACTIVE
+        ship.ship_status = ShipStatus.SAILING
+        self.voyage.departure_date = departure_date
+        self.voyage.travel_status = VoyageStatus.DEPARTED
+
+        self.db.commit()
+        self.db.refresh(self.voyage)
+        return self.voyage
+
 
     def create_voyage(self, payload: VoyageCreate) -> Voyage:
         """Create a new voyage after validating business rules.
@@ -120,19 +174,19 @@ class VoyageService:
         - On successful creation, the docking.departure_date is set, the ship status is set to SAILING,
           and the dock's dock_status is set to ACTIVE (ship has left).
         """
-        from app.models import Docking, Dock
-        from app.enums import ShipStatus
-
-        ship = self.db.query(Ship).filter(Ship.id == payload.ship_id).first()
-        if not ship:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
+        if not self.ship_sev.ship:
+           self.ship_sev.ship = self.ship_sev.sev_get_ship(payload.ship_id)
 
         if payload.destination_harbor_id is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="destination_harbor_id is required")
         destination = sev_get_harbor(db=self.db, harbor_id=payload.destination_harbor_id)
+
+        if payload.departure_harbor_id is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="destination_harbor_id is required")
         departure_harbor = sev_get_harbor(db=self.db, harbor_id=payload.departure_harbor_id)
+
         if None in (
-            departure_harbor.latitude,
+             departure_harbor.latitude,
             departure_harbor.longitude,
             destination.latitude,
             destination.longitude,):
@@ -140,33 +194,24 @@ class VoyageService:
                 detail="departure and destination harbors must have latitude and longitude",)
         
         # Ensure ship is currently docked
-        if str(ship.ship_status.value) != ShipStatus.DOCKED.value:
+        if str(self.ship_sev.ship.ship_status.value) != ShipStatus.DOCKED.value:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ship must be docked to start a voyage (current status: {ship.ship_status.value})",
-            )
+                detail=f"Ship must be docked to start a voyage (current status: {self.ship_status.value})",)
 
         # Find current docking (arrival recorded, no departure yet)
-        docking = (
-            self.db.query(Docking).join(Dock)
-            .filter(Docking.ship_id == ship.id,Docking.departure_date == None).first())  
+        lastdock = self.ship_sev.curent_dock()
 
-        if docking is None:
-                raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Ship is not currently docked (no active docking found)",)
-
+                
         # Confirm the docking's harbor matches the voyage departure harbor
-        if docking.dock is None or docking.dock.harbor_id != payload.departure_harbor_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Ship is not located at the specified departure harbor",
-            )
+        if lastdock.dock.harbor_id != payload.departure_harbor_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ship is not located at the specified departure harbor",)
 
 
-        size_filter(self.db, payload.destination_harbor_id, ship.ship_size)
+        size_filter(self.db, payload.destination_harbor_id, self.ship_sev.ship.ship_size)
         departure_date = payload.departure_date or _utcnow()
-        estimated_arrival, _, _ = estimate_arrival(self.db, ship, departure_harbor, destination, departure_date)
+        estimated_arrival, _, _ = estimate_arrival(self.db, self.ship_sev.ship, departure_harbor, destination, departure_date)
         self.date_validation(departure_date, payload.arrival_date, estimated_arrival)
 
         data = payload.model_dump()
@@ -174,14 +219,6 @@ class VoyageService:
         voyage = Voyage(**data)
 
         self.db.add(voyage)
-
-        docking.departure_date = voyage.departure_date
-
-        if docking.dock is not None:
-            docking.dock.dock_status = DockStatus.ACTIVE
-
-        # Update ship status to sailing
-        ship.ship_status = ShipStatus.SAILING
 
         self.db.commit()
         self.db.refresh(voyage)
@@ -197,13 +234,18 @@ class VoyageService:
 
     def update_dates(self, payload: Updatedates) -> Voyage:
         """Update voyage date fields with basic validation."""
-        
         data = payload.model_dump(exclude_unset=True)
-        for field, value in data.items():
+        if not data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="At least one voyage field is required",
+            )
 
+        for field, value in data.items():
             if field == "ship_id":
                 continue
-        setattr(self.voyage, field, value)
+            setattr(self.voyage, field, value)
+
         self.date_validation(self.voyage.departure_date, self.voyage.arrival_date, self.voyage.estimated_arrival)
         self.db.commit()
         self.db.refresh(self.voyage)
@@ -244,11 +286,14 @@ class VoyageService:
         self.db.refresh(self.voyage)
         return self.voyage
 
+
     def record_arrival(self, payload: VoyageArrivalUpdate) -> Voyage:
         if self.voyage is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Voyage not found")
         arrival_date = payload.arrival_date
-        if self.voyage.departure_date and arrival_date < self.voyage.departure_date:
+        departure_date = _as_utc(self.voyage.departure_date)
+        arrival_date = _as_utc(arrival_date)
+        if departure_date and arrival_date < departure_date:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="arrival_date cannot be before departure_date")
         ship = self.db.query(Ship).filter(Ship.id == self.voyage.ship_id).first()
         if ship is None:
