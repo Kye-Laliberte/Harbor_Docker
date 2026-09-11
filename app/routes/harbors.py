@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
 from app.dependencies import get_db
-from app.schemas import HarborCreate, HarborRead, HarborUpdate, DockRead
+from app.schemas import  HarborRead, HarborUpdate, DockRead, HarborBase
 import app.enums as enums
-from app.services.harbor_service import HarborService, HarborOperations
+from app.services.harbor_service import HarborService, HarborOperations, sev_delete_harbor
 
 
 router = APIRouter(prefix="/harbors", tags=["harbors"])
@@ -18,12 +18,12 @@ def list_harbors(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
 
 
 @router.post("/new", response_model=HarborRead, status_code=status.HTTP_201_CREATED)
-def create_harbor(payload: HarborCreate, db: Session = Depends(get_db)):
+def create_harbor(payload: HarborBase, db: Session = Depends(get_db)):
     """Create a new harbor from the provided payload."""
     return HarborService(db).create_harbor(payload)
 
 
-@router.get("/{harbor_id}/get", response_model=HarborRead)
+@router.get("/{harbor_id}/get", response_model=HarborRead, status_code= status.HTTP_200_OK)
 def get_harbor(harbor_id: int, db: Session = Depends(get_db)):
     """Retrieve a single harbor by its identifier."""
     return HarborService(db).get_harbor(harbor_id)
@@ -32,7 +32,7 @@ def get_harbor(harbor_id: int, db: Session = Depends(get_db)):
 @router.get("/{harbor_id}/active_docks", response_model=list[DockRead])
 def get_active_docks(harbor_id: int, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Return active docks for the specified harbor."""
-    docks= HarborOperations(db, harbor_id).active_docks(harbor_id, skip=skip, limit=limit)
+    docks = HarborOperations(db, harbor_id).active_docks(skip=skip, limit=limit)
     if not docks:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No active docks found for harbor_id {harbor_id}")
     return docks
@@ -44,13 +44,13 @@ def get_docks_above_size(harbor_id: int, min_size: enums.VesselSize, skip: int =
     """
     if not isinstance(min_size, enums.VesselSize):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"min_size must be a valid VesselSize enum value, got {min_size}")
-    return HarborOperations(db, harbor_id).docks_above_size(harbor_id, min_size, skip=skip, limit=limit)
+    return HarborOperations(db, harbor_id).docks_above_size(min_size, skip=skip, limit=limit)
 
 
 @router.put("/{harbor_id}/update", response_model=HarborRead, status_code=status.HTTP_200_OK)
 def update_harbor(harbor_id: int, payload: HarborUpdate, db: Session = Depends(get_db)):
     """Update the details for an existing harbor."""
-    return HarborOperations(db,harbor_id).update_harbor(payload)
+    return HarborService(db).update_harbor(harbor_id,payload)
 
 
 @router.delete("/{harbor_id}", status_code=status.HTTP_204_NO_CONTENT)

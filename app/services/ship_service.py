@@ -1,12 +1,10 @@
 from datetime import datetime, timezone
 from typing import List, Optional
-
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-
-from app.models import Ship
-from app.schemas import DockingCreate, ShipCreate, ShipUpdate
 from app.enums import ShipStatus
+from app.models import Ship,Docking,Harbor, Dock
+from app.schemas import DockingCreate, ShipCreate, ShipUpdate
 def sev_list_ships(db: Session, skip: int = 0, limit: int = 100) -> List[Ship]:
     """Return a paginated list of ships from the database."""
     return db.query(Ship).offset(skip).limit(limit).all()
@@ -28,7 +26,7 @@ class shipService:
         self.ship = ship
         return ship
         
-    def sev_create_ship(self,payload: ShipCreate, dock_id: Optional[int] = None) -> Ship:
+    def create_ship(self,payload: ShipCreate, dock_id: Optional[int] = None) -> Ship:
         """Create a new ship after validating cargo and registration uniqueness."""
         if payload.current_cargo > payload.cargo_capacity:
             raise HTTPException(
@@ -79,10 +77,23 @@ class shipService:
         self.db.refresh(self.ship)
         return self.ship
 
-    def sev_delete_ship(self) -> None:
+    def delete_ship(self) -> None:
         """Delete a ship by id."""
         if self.ship is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
         self.db.delete(self.ship)
         self.db.commit()
         return None
+
+    def curent_dock(self):
+        if self.ship.ship_status is not ShipStatus.DOCKED:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Ship is not currently docked")
+        
+        out = (self.db.query(Docking).join(Dock, Dock.id == Docking.dock_id)
+                   .join(Harbor,Harbor.id == Dock.harbor_id)
+                .filter(Docking.ship_id == self.ship.id,Docking.departure_date.is_(None)).first())  
+        if out is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Ship is not currently docked (no active docking found)",)
+        
+        return out

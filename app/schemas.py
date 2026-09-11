@@ -17,7 +17,7 @@ def _as_utc(value: Optional[datetime]) -> Optional[datetime]:
 # harbor schemas
 class HarborBase(BaseModel):
     name: str
-    timezone: datetime
+    timezone: str
     latitude: Optional[float] = Field(None, ge=-90, le=90)
     longitude: Optional[float] = Field(None, ge=-180, le=180)
 
