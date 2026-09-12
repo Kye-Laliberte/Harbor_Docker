@@ -84,6 +84,13 @@ class DockService:
         self.db.refresh(self.dock)
         return self.dock
 
+
+    def dock_harbor(self):
+        if self.dock:
+            out =self.db.query(Harbor).filter(Harbor.id == self.dock.harbor_id)
+        else:
+            raise HTTPException(status_code=status.HTTP_204_NO_CONTENT,detail="no dock selected")
+        return out 
     def delete_dock(self) -> None:
         self.db.delete(self.dock)
         self.db.commit()

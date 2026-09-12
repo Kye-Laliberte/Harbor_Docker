@@ -84,6 +84,7 @@ class shipService:
         self.db.delete(self.ship)
         self.db.commit()
         return None
+    
 
     def curent_dock(self):
         if self.ship.ship_status is not ShipStatus.DOCKED:
