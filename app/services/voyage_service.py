@@ -68,34 +68,29 @@ class VoyageService:
         if self.voyage.travel_status != VoyageStatus.APPROVED:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Voyage must be approved before leaving the dock",
-            )
+                detail="Voyage must be approved before leaving the dock",)
 
         ship = self.ship_sev.ship or self.ship_sev.sev_get_ship(self.voyage.ship_id)
         if ship.ship_status not in (ShipStatus.DOCKED, ShipStatus.SAILING):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ship cannot leave dock while {ship.ship_status.value}",
-            )
+                detail=f"Ship cannot leave dock while {ship.ship_status.value}",)
 
         docking = (
             self.db.query(Docking)
             .filter(Docking.ship_id == ship.id, Docking.departure_date.is_(None))
-            .order_by(Docking.arrival_date.desc())
-            .first())
+            .order_by(Docking.arrival_date.desc()).first())
         
         if docking is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Ship is not currently docked",
-            )
+                detail="Ship is not currently docked",)
 
         departure_date = _as_utc(self.voyage.departure_date) or _utcnow()
         if departure_date > _utcnow():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Voyage departure_date is in the future",
-            )
+                detail="Voyage departure_date is in the future",)
 
         docking.departure_date = departure_date
         docking.ship_clearance_status = ShipClearanceStatus.APPROVED

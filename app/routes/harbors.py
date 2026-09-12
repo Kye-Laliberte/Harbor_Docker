@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from app.dependencies import get_db
 from app.schemas import  HarborRead, HarborUpdate, DockRead, HarborBase
 import app.enums as enums
-from app.services.harbor_service import HarborService, HarborOperations, sev_delete_harbor
+from app.services.harbor_service import HarborService, HarborOperations
 
 
 router = APIRouter(prefix="/harbors", tags=["harbors"])

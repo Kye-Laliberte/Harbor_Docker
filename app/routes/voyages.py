@@ -4,7 +4,7 @@ from app.dependencies import get_db
 from app.models import Ship
 from app.schemas import VoyageArrivalUpdate, VoyageCreate, VoyagePrediction, VoyageRead, Updatedates
 from app.services.harbor_service import HarborService
-from app.services.travel_time_service import predict_voyage_metrics
+from app.services.travel_time_service import predict_voyage_metrics, training_sample_count
 from app.services.voyage_service import VoyageService
 router = APIRouter(prefix="/voyages", tags=["voyages"])
 
@@ -52,12 +52,6 @@ def approve_voyage(voyage_id: int, db: Session = Depends(get_db)):
     """Approve a scheduled voyage before departure."""
     return VoyageService(db=db, v_id=voyage_id).approve_voyage()
 
-@router.post("/{voyage_id}/update_status", status_code=status.HTTP_200_OK)
-def update_voyage_status(voyage_id:int, db:Session =Depends(get_db)):
-    """Update voyage status and handle departure if applicable."""
-    voyage = VoyageService(db=db, v_id=voyage_id).leave_dock()
-    return {"status": "updated", "voyage_id": voyage.id}
-
 @router.post("/{voyage_id}/leave_dock", response_model=VoyageRead, status_code=status.HTTP_200_OK)
 def leave_voyage_dock(voyage_id: int, db: Session = Depends(get_db)):
     """Release the ship from its dock and mark the voyage departed."""
@@ -79,3 +73,7 @@ def delete_voyage(voyage_id: int, db: Session = Depends(get_db)):
     """Delete a voyage by id."""
     VoyageService(db=db,v_id=voyage_id).delete_voyage(voyage_id)
     return None
+
+@router.post("/trane")
+def trane_data(db:Session =Depends(get_db)):
+    training_sample_count(db=db)

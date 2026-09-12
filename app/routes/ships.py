@@ -39,9 +39,8 @@ def delete_ship(ship_id: int, db: Session = Depends(get_db)):
     return None
 
 @router.get("/{ship_id}/last_docking",response_model=DockingRead,status_code=status.HTTP_200_OK)
-def last_docking(ship_id:int,db: Session = Depends(get_db)):
-    """"""
-    
+def curent_dock_locaton(ship_id:int,db: Session = Depends(get_db)):
+    """gets last docking"""
     # Find current docking (arrival recorded, no departure yet)
     out=shipService(db,ship_id).curent_dock()
     
