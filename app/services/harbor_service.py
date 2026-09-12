@@ -85,7 +85,6 @@ def harbor_active_docks(db: Session, harbor_id: int, dock_size: VesselSize | int
     return (db.query(Dock).filter(Dock.harbor_id == harbor_id, Dock.dock_status == "active", 
                                   Dock.dock_size.in_(allowed_ranks)).all())
 
-
 def sev_update_harbor(db: Session, harbor_id: int, payload: HarborUpdate) -> Harbor:
     """Update an existing harbor with the provided fields after validating the new name."""
     harbor = sev_get_harbor(db, harbor_id)
@@ -103,7 +102,6 @@ def sev_update_harbor(db: Session, harbor_id: int, payload: HarborUpdate) -> Har
     db.refresh(harbor)
     return harbor
 
-
 def sev_delete_harbor(db: Session, harbor_id: int) -> None:
     """Delete a harbor unless it still has docks attached to it."""
     harbor = sev_get_harbor(db, harbor_id)
@@ -114,7 +112,6 @@ def sev_delete_harbor(db: Session, harbor_id: int) -> None:
     db.delete(harbor)
     db.commit()
     return None
-
 
 class HarborService:
     """CRUD and query operations for harbors."""
@@ -133,8 +130,6 @@ class HarborService:
 
     def update_harbor(self, harbor_id: int, payload: HarborUpdate) -> Harbor:
         return sev_update_harbor(self.db, harbor_id, payload)
-
-
 
 class HarborOperations:
     """Monitor and coordinate the operational state of one harbor."""
