@@ -81,7 +81,7 @@ def harbor_active_docks(db: Session, harbor_id: int, dock_size: VesselSize | int
 
 def sev_delete_harbor(db: Session, harbor_id: int) -> None:
     """Delete a harbor unless it still has docks attached to it."""
-    harbor = sev_get_harbor(db, harbor_id)
+    harbor = HarborService(db).get_harbor(db, harbor_id)
     docks = db.query(Dock).filter(Dock.harbor_id == harbor_id).first()
     if docks:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="docks still attached")

@@ -29,6 +29,7 @@ def get_harbor(harbor_id: int, db: Session = Depends(get_db)):
     return HarborService(db).get_harbor(harbor_id)
 
 
+
 @router.get("/{harbor_id}/active_docks", response_model=list[DockRead])
 def get_active_docks(harbor_id: int, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Return active docks for the specified harbor."""

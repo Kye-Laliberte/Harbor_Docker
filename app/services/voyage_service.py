@@ -118,8 +118,6 @@ class VoyageService:
         if not self.ship_sev.ship:
            self.ship_sev.ship = self.ship_sev.sev_get_ship(ship_id=payload.ship_id)
 
-        if payload.destination_harbor_id is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="destination_harbor_id is required")
         destination = harborsev.get_harbor(harbor_id=payload.destination_harbor_id)
 
         if payload.departure_harbor_id is None:
@@ -132,24 +130,17 @@ class VoyageService:
             destination.longitude,):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                 detail="departure and destination harbors must have latitude and longitude",)
-        
-        # Ensure ship is currently docked
-        if str(self.ship_sev.ship.ship_status.value) != ShipStatus.DOCKED.value:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                                detail=f"Ship must be docked to start a voyage (current status: {self.ship_sev.ship.ship_status.value})",)
 
         # Find current docking (arrival recorded, no departure yet)
         lastdock = self.ship_sev.curent_dock()
 
-                
         # Confirm the docking's harbor matches the voyage departure harbor
         if lastdock.dock.harbor_id != payload.departure_harbor_id:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Ship is not located at the specified departure harbor",)
 
-
         size_filter(self.db, payload.destination_harbor_id, self.ship_sev.ship.ship_size)
-        departure_date = payload.departure_date or _utcnow()
+        departure_date = payload.departure_date or None
         estimated_arrival, _, _ = estimate_arrival(self.db, self.ship_sev.ship, departure_harbor, destination, departure_date)
         self.date_validation(departure_date, payload.arrival_date, estimated_arrival)
 

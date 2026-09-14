@@ -17,6 +17,7 @@ def list_voyages(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
 @router.post("/create", response_model=VoyageRead, status_code=status.HTTP_201_CREATED)
 def create_voyage(payload: VoyageCreate, db: Session = Depends(get_db)):
     """Create a new voyage."""
+    
     voyage = VoyageService(db=db, v_id=None).create_voyage(payload)
     return voyage
 
