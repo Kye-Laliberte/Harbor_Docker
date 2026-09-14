@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 import app.enums as enums
 from app.models import Docking, Ship, Dock, Voyage
-from app.schemas import DockingCreate,ShipUpdate,DockUpdate
+from app.schemas import DockingCreate
 from app.services.ship_service import shipService
 from app.services.dock_service import sev_update_dock, sev_get_dock
 
@@ -223,9 +223,10 @@ def sev_create_docking(db: Session,payload: DockingCreate,
 
     # Update dock and ship statuses symmetrically: when a ship docks, dock becomes INACTIVE (occupied)
     dock = db.query(Dock).filter(Dock.id == payload.dock_id).first()
-    ship = db.query(Ship).filter(Ship.id == payload.ship_id).first()
+    shipsev =shipService(db=db,ship_id=payload.ship_id)
+    ship = shipsev.ship
 
-    if dock is None or ship is None:
+    if dock is None:
         # This should not happen because validate_docking_input already checked existence, but guard anyway
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dock or Ship not found during docking creation")
 
@@ -233,6 +234,7 @@ def sev_create_docking(db: Session,payload: DockingCreate,
         dock.dock_status = enums.DockStatus.INACTIVE
         if ship.ship_status != enums.ShipStatus.MAINTENANCE:
             ship.ship_status = enums.ShipStatus.DOCKED
+        
 
     db.add(docking)
     db.commit()

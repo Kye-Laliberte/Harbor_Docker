@@ -250,6 +250,10 @@ class VoyageService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Only scheduled voyages can be approved",)
+
+        if self.voyage.departure_date is None:
+            self.voyage.departure_date =  _utcnow
+
         self.voyage.travel_status = VoyageStatus.APPROVED
         self.db.commit()
         self.db.refresh(self.voyage)
