@@ -9,7 +9,7 @@ from app.models import Dock, Docking, Ship, Voyage
 from app.schemas import Updatedates, VoyageArrivalUpdate, VoyageCreate
 from app.services.harbor_service import sev_list_docks_above_size as size_filter
 from app.enums import DockStatus, ShipClearanceStatus, ShipStatus, VoyageStatus
-from app.services.harbor_service import sev_get_harbor
+from app.services.harbor_service import HarborService
 from app.services.travel_time_service import estimate_arrival
 from app.services.ship_service import shipService
 logger = logging.getLogger(__name__)
@@ -114,19 +114,19 @@ class VoyageService:
         - On successful creation, the docking.departure_date is set, the ship status is set to SAILING,
           and the dock's dock_status is set to ACTIVE (ship has left).
         """
+        harborsev = HarborService(self.db)
         if not self.ship_sev.ship:
-           self.ship_sev.ship = self.ship_sev.sev_get_ship(payload.ship_id)
+           self.ship_sev.ship = self.ship_sev.sev_get_ship(ship_id=payload.ship_id)
 
         if payload.destination_harbor_id is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="destination_harbor_id is required")
-        destination = sev_get_harbor(db=self.db, harbor_id=payload.destination_harbor_id)
+        destination = harborsev.get_harbor(harbor_id=payload.destination_harbor_id)
 
         if payload.departure_harbor_id is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="destination_harbor_id is required")
-        departure_harbor = sev_get_harbor(db=self.db, harbor_id=payload.departure_harbor_id)
+        departure_harbor = harborsev.get_harbor(harbor_id=payload.departure_harbor_id)
 
-        if None in (
-             departure_harbor.latitude,
+        if None in (departure_harbor.latitude,
             departure_harbor.longitude,
             destination.latitude,
             destination.longitude,):
@@ -194,23 +194,25 @@ class VoyageService:
         if self.voyage is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Voyage not found")
 
+        harbor_sev =HarborService(db=self.db)
         ship = self.db.query(Ship).filter(Ship.id == self.voyage.ship_id).first()
         if not ship:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
 
         size_filter(self.db, harbor_id, ship.ship_size)
-        destination = sev_get_harbor(self.db, harbor_id)
-        departure_harbor = sev_get_harbor(self.db, self.voyage.departure_harbor_id)
+        destination = harbor_sev.get_harbor( harbor_id)
+        departure_harbor = harbor_sev.get_harbor( harbor_id=self.voyage.departure_harbor_id)
+
         if None in (
             departure_harbor.latitude,
             departure_harbor.longitude,
             destination.latitude,
-            destination.longitude,
-        ):
+            destination.longitude,):
+
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="departure and destination harbors must have latitude and longitude",
-            )
+                detail="departure and destination harbors must have latitude and longitude",)
+        
         departure_date = payload.departure_date or self.voyage.departure_date or _utcnow()
         estimated_arrival, _, _ = estimate_arrival(self.db, ship, departure_harbor, destination, departure_date)
         self.date_validation(departure_date, payload.arrival_date, estimated_arrival)

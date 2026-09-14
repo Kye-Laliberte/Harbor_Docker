@@ -15,13 +15,6 @@ SIZE_RANK = {
 }
 
 
-def sev_get_harbor(db: Session, harbor_id: int) -> Harbor:
-    """Fetch a single harbor by its identifier or raise a 404 error."""
-    harbor = db.query(Harbor).filter(Harbor.id == harbor_id).first()
-    if not harbor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Harbor not found")
-    return harbor
-
 def _normalize_size(min_size: VesselSize | int) -> VesselSize:
     """Accept either an enum value or its integer rank and normalize it."""
     if isinstance(min_size, VesselSize):
@@ -85,22 +78,6 @@ def harbor_active_docks(db: Session, harbor_id: int, dock_size: VesselSize | int
     return (db.query(Dock).filter(Dock.harbor_id == harbor_id, Dock.dock_status == "active", 
                                   Dock.dock_size.in_(allowed_ranks)).all())
 
-def sev_update_harbor(db: Session, harbor_id: int, payload: HarborUpdate) -> Harbor:
-    """Update an existing harbor with the provided fields after validating the new name."""
-    harbor = sev_get_harbor(db, harbor_id)
-    data = payload.model_dump(exclude_unset=True)
-
-    if "name" in data and data["name"] is not None:
-        existing = db.query(Harbor).filter(Harbor.name == data["name"], Harbor.id != harbor_id).first()
-        if existing:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="harbor name already taken")
-
-    for field, value in data.items():
-        setattr(harbor, field, value)
-
-    db.commit()
-    db.refresh(harbor)
-    return harbor
 
 def sev_delete_harbor(db: Session, harbor_id: int) -> None:
     """Delete a harbor unless it still has docks attached to it."""
@@ -119,7 +96,10 @@ class HarborService:
     def __init__(self, db: Session):
         self.db = db
     def get_harbor(self, harbor_id: int) -> Harbor:
-        return sev_get_harbor(db=self.db, harbor_id=harbor_id)
+        harbor = self.db.query(Harbor).filter(Harbor.id == harbor_id).first()
+        if not harbor:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Harbor not found")
+        return harbor
 
     def all_harbors(self, skip: int = 0, limit: int = 100) -> List[Harbor]:
         """Return a paginated list of harbors from the database."""
@@ -129,7 +109,21 @@ class HarborService:
         return sev_create_harbor(self.db, payload)
 
     def update_harbor(self, harbor_id: int, payload: HarborUpdate) -> Harbor:
-        return sev_update_harbor(self.db, harbor_id, payload)
+        data = payload.model_dump(exclude_unset=True)
+
+        harbor = self.get_harbor(harbor_id)
+
+        if "name" in data and data["name"] is not None:
+            existing = self.db.query(Harbor).filter(Harbor.name == data["name"], Harbor.id != harbor_id).first()
+            if existing:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="harbor name already taken")
+        
+        for field, value in data.items():
+            setattr(harbor, field, value)
+        
+        self.db.commit()
+        self.db.refresh(harbor)
+        return harbor
 
 class HarborOperations:
     """Monitor and coordinate the operational state of one harbor."""
@@ -137,17 +131,9 @@ class HarborOperations:
     def __init__(self, db: Session, harbor_id: int):
         self.db = db
         self.service = HarborService(db)
-        self.harbor = self.service.get_harbor(harbor_id)
+        if harbor_id:
+            self.harbor = self.service.get_harbor(harbor_id)
         
-    def get_harbor(self, harbor_id: int = None) -> Harbor:
-        if harbor_id is not None:
-            self.harbor = sev_get_harbor(self.db, harbor_id)
-        elif self.harbor is not None:
-            self.harbor = sev_get_harbor(self.db, self.harbor.id)
-        else:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No harbor selected")
-        
-        return self.harbor
 
     def dock_status(self, dock_id: int) -> dict[str, Any]:
         """Return availability and current ship information for one dock."""
@@ -299,11 +285,12 @@ class HarborOperations:
 
     def delete_harbor(self):
         """Delete a harbor unless it still has docks attached to it."""
-        harbor = sev_get_harbor(self.db, self.harbor.id)
+        harbor = self.service.get_harbor(self.db, self.harbor.id)
         docks = self.db.query(Dock).filter(Dock.harbor_id == self.harbor.id).first()
         if docks:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="docks still attached")
-        self.harbor = None
         self.db.delete(harbor)
         self.db.commit()
+
+        self.harbor = None
         return None
