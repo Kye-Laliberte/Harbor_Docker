@@ -40,7 +40,10 @@ def update_ship(ship_id: int, payload: ShipUpdate, db: Session = Depends(get_db)
 @router.delete("/{ship_id}/delete", status_code=status.HTTP_204_NO_CONTENT)
 def delete_ship(ship_id: int, db: Session = Depends(get_db)):
     """Delete a ship by its id."""
-    shipService(db=db, ship_id=ship_id).delete_ship()
+    shipsev=shipService(db=db, ship_id=ship_id)
+    shipsev.curent_dock()# proves ship is at a dock
+    # need to add a removal of curent docking 
+    shipsev.delete_ship()
     return None
 
 @router.get("/{ship_id}/last_docking",response_model=DockingRead,status_code=status.HTTP_200_OK)
