@@ -74,8 +74,8 @@ def delete_voyage(voyage_id: int, db: Session = Depends(get_db)):
     """Delete a voyage by id."""
     voy=VoyageService(db=db,v_id=voyage_id)
 
-    if voy.voyage.arrival_date:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="voyage is now a record")
+    if voy.voyage.arrival_date is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="this is the curent Voyage")
 
     voy.delete_voyage(voyage_id)
     return None

@@ -41,7 +41,9 @@ def get_docking(docking_id: int, db: Session = Depends(get_db)):
 def delete_docking(docking_id: int, db: Session = Depends(get_db)):
     """Delete a docking by id."""
     dockingsev = DockingService(db,docking_id)
-    if dockingsev.docking.departure_date:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="docking is now a record") 
+
+    if dockingsev.docking.departure_date is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="this is the curent docking") 
+
     dockingsev.sev_delete_docking()
     return None
