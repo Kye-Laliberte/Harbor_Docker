@@ -72,7 +72,12 @@ def arrive_voyage(voyage_id: int, payload: VoyageArrivalUpdate, db: Session = De
 @router.delete("/{voyage_id}/delete", status_code=status.HTTP_204_NO_CONTENT)
 def delete_voyage(voyage_id: int, db: Session = Depends(get_db)):
     """Delete a voyage by id."""
-    VoyageService(db=db,v_id=voyage_id).delete_voyage(voyage_id)
+    voy=VoyageService(db=db,v_id=voyage_id)
+
+    if voy.voyage.arrival_date:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="voyage is now a record")
+
+    voy.delete_voyage(voyage_id)
     return None
 
 @router.post("/trane")
