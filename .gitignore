@@ -7,9 +7,6 @@ __pycache__/
 .env
 
 
-tests/
-tests/*
-test.db
 
 
 .git

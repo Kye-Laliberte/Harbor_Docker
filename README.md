@@ -1,4 +1,4 @@
-# Harbor Management API
+# Harbor Management app
 
 A robust FastAPI-based REST API for managing comprehensive harbor operations, including ships, docks, voyages, and docking procedures with full timezone awareness and cargo management.
 
@@ -334,7 +334,7 @@ alembic downgrade -1
 alembic downgrade <revision_id>
 ```
 
-## 🧪 Testing
+## 🧪 Testing not yet added.
 
 Test suite is located in `tests/` directory:
 
@@ -349,7 +349,7 @@ pytest tests/test_endpoints.py -v
 pytest tests/ --cov=app --cov-report=html
 ```
 
-### Test Files
+### Test Files not yet set up
 - `test_endpoints.py`: API endpoint integration tests
 - `test_docking_voyage_flow.py`: Complex workflow scenarios
 - `test_voyage_service.py`: Service-level business logic tests
@@ -452,7 +452,7 @@ GET /dockings/list?skip=20&limit=50
 - [ ] WebSocket support for real-time updates
 - [ ] Advanced voyage planning with route optimization
 - [ ] Cargo manifest tracking
-- [ ] Fuel consumption calculation
+- [ ] cargo load and unload 
 - [ ] Weather integration for voyage safety
 - [ ] Cost tracking and billing
 - [ ] Audit logging for compliance
@@ -463,9 +463,6 @@ GET /dockings/list?skip=20&limit=50
 
 All identified bugs have been fixed. See commit history for details.
 
-## 📄 License
-
-[Add your license information]
 
 ## 💬 Support
 
@@ -483,9 +480,7 @@ For issues, questions, or feature requests:
 4. Create pull request with description
 
 ---
-
-**Project Status**: ✅ Production Ready  
-**Last Updated**: 2026-08-31  
+**Last Updated**: 2026-09-17  
 **API Version**: 1.0  
 **Python Version**: 3.8+  
 **Database**: PostgreSQL 12+
