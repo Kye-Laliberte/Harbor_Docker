@@ -3,7 +3,7 @@ from typing import List
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models import Dock, Harbor
+from app.models import Dock, Harbor,Docking
 from app.schemas import DockCreate, DockUpdate
 
 
@@ -83,10 +83,20 @@ class DockService:
         self.db.commit()
         self.db.refresh(self.dock)
         return self.dock
-
+    
+    def in_dock(self) -> bool:
+        """find if a ship is curently in the dock"""
+        docking = self.db.query(Docking).filter(Docking.departure_date.is_(None),Docking.dock_id==self.dock.id)
+        if docking:
+            return True
+        return False
+    
      
     def delete_dock(self) -> None:
+        """"""
+        if self.in_dock():
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="ship curently in dock")
         self.db.delete(self.dock)
         self.db.commit()
-        self.dock = None
+        
         return None
