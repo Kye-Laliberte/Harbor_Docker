@@ -1,0 +1,1 @@
+bolth ship and dock/ harbor deleate are aporating corectly however that need beter constrants and RPM and cheks to prevent voyages that go to nowhere 
