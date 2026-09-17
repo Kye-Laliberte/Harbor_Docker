@@ -461,7 +461,7 @@ GET /dockings/list?skip=20&limit=50
 
 ## 🐛 Known Issues
 
-All identified bugs have been fixed. See commit history for details.
+pytest is not working.
 
 
 ## 💬 Support
