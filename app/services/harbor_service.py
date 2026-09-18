@@ -270,12 +270,10 @@ class HarborOperations:
 
     def delete_harbor(self):
         """Delete a harbor unless it still has docks attached to it."""
-        harbor = self.service.get_harbor(self.db, self.harbor.id)
         docks = self.db.query(Dock).filter(Dock.harbor_id == self.harbor.id).first()
         if docks:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="docks still attached")
-        self.db.delete(harbor)
+        self.db.delete(self.harbor)
         self.db.commit()
 
-        self.harbor = None
         return None
