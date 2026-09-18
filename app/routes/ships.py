@@ -37,7 +37,7 @@ def update_ship(ship_id: int, payload: ShipUpdate, db: Session = Depends(get_db)
     return ship.sev_update_ship(payload)
 
 
-@router.delete("/{ship_id}/delete", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{ship_id}/delete", status_code=status.HTTP_204_NO_CONTENT)# need to swith ship and dock to soft deleat 
 def delete_ship(ship_id: int, db: Session = Depends(get_db)):
     """Delete a ship by its id."""
     shipsev=shipService(db=db, ship_id=ship_id)

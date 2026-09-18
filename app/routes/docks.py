@@ -32,7 +32,7 @@ def update_dock(dock_id: int, payload: DockUpdate, db: Session = Depends(get_db)
     return DockService(db,dock_id).update_dock(payload)
 
 
-@router.delete("/{dock_id}/delete", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{dock_id}/delete", status_code=status.HTTP_204_NO_CONTENT)# need to swith ship and dock to soft deleat 
 def delete_dock(dock_id: int, db: Session = Depends(get_db)):
     """Delete a dock by its identifier."""
     DockService(db, dock_id).delete_dock()

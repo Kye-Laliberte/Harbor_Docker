@@ -59,7 +59,7 @@ CREATE TABLE if NOT EXISTS docks(
 );
 
 CREATE TABLE if NOT EXISTS dockings(
-    id SERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY,-- need to switch to composit key of ship_id or ship.registration_number and dock_id or dock.dock_code
     --voyage_id INTEGER REFERENCES voyages(id),
     ship_id INTEGER REFERENCES ships(id),
     dock_id INTEGER REFERENCES docks(id),

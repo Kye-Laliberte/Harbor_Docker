@@ -46,7 +46,7 @@ class Docking(Base):
         CheckConstraint('departure_date IS NULL OR departure_date > arrival_date', name='ck_departure_after_arrival'),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)# need to switch to composit key of ship_id or ship.registration_number and dock_id or dock.dock_code
     #voyage_id = Column(Integer, ForeignKey('voyages.id'),nullable=True)
     ship_id = Column(Integer, ForeignKey('ships.id'), nullable=False)
     dock_id = Column(Integer, ForeignKey('docks.id'), nullable=False)
