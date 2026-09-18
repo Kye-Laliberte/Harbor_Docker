@@ -86,10 +86,11 @@ class DockService:
     
     def in_dock(self) -> bool:
         """find if a ship is curently in the dock"""
-        docking = self.db.query(Docking).filter(Docking.departure_date.is_(None),Docking.dock_id==self.dock.id)
-        if docking:
-            return True
-        return False
+        return self.db.query(
+            self.db.query(Docking).filter(
+                Docking.departure_date.is_(None),Docking.dock_id==self.dock_id).exists()).scalar()
+        
+        
     
      
     def delete_dock(self) -> None:
