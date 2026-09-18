@@ -30,15 +30,15 @@ def get_harbor(harbor_id: int, db: Session = Depends(get_db)):
 
 
 
-@router.get("/{harbor_id}/active_docks", response_model=list[DockRead])
+@router.get("/{harbor_id}/active_docks", response_model=list[DockRead], status_code=status.HTTP_200_OK)
 def get_active_docks(harbor_id: int, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Return active docks for the specified harbor."""
     docks = HarborOperations(db, harbor_id).active_docks(skip=skip, limit=limit)
     if not docks:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No active docks found for harbor_id {harbor_id}")
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail=f"No active docks found for harbor_id {harbor_id}")
     return docks
 
-@router.get("/{harbor_id}/docks_above_size/{min_size}", response_model=list[DockRead])
+@router.get("/{harbor_id}/docks_above_size/{min_size}", response_model=list[DockRead],status_code=status.HTTP_200_OK)
 def get_docks_above_size(harbor_id: int, min_size: enums.VesselSize, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Return docks in the harbor at or above the specified vessel size.
     `min_size` must be one of the values from `enums.VesselSize` (e.g. SMALL, MEDIUM, LARGE).

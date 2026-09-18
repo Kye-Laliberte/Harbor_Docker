@@ -32,8 +32,8 @@ class shipService:
             raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="current_cargo cannot exceed cargo_capacity",)
-    
-
+        if dock_id is None and payload.ship_status == ShipStatus.DOCKED:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="dock is rquiered for docking")
         existing = self.db.query(Ship).filter(Ship.registration_number == payload.registration_number).first()
         if existing:
             raise HTTPException(

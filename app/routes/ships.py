@@ -4,7 +4,7 @@ from app.dependencies import get_db
 from app.schemas import ShipCreate, ShipUpdate, ShipRead,DockingRead
 from app.services.ship_service import shipService, sev_list_ships
 from app.enums import ShipStatus
-
+from fastapi import HTTPException
 
 router = APIRouter(prefix="/ships", tags=["ships"])
 
@@ -32,7 +32,7 @@ def update_ship(ship_id: int, payload: ShipUpdate, db: Session = Depends(get_db)
     ship=shipService(db,ship_id)
 
     if ship.ship.ship_status is ShipStatus.SAILING:
-        raise
+        raise HTTPException(status_code=300,detail="cant update wile sailing")
         
     return ship.sev_update_ship(payload)
 
