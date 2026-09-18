@@ -42,24 +42,6 @@ class HarborRead(HarborBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class HarborUpdate(BaseModel):
-    name: Optional[str] = None
-    timezone: Optional[str] = None
-    latitude: Optional[float] = Field(None, ge=-90, le=90)
-    longitude: Optional[float] = Field(None, ge=-180, le=180)
-
-    @field_validator("timezone")
-    @classmethod
-    def validate_timezone(cls, value: str | None) -> str | None:
-        if value is None:
-            return value
-        value = value.strip()
-        try:
-            ZoneInfo(value)
-        except ZoneInfoNotFoundError as exc:
-            raise ValueError("timezone must be a valid IANA timezone name") from exc
-        return value
-
 
 # dock schemas
 class DockBase(BaseModel):

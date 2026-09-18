@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.enums import DockStatus, ShipClearanceStatus, ShipStatus, VesselSize, VoyageStatus
 from app.models import Dock, Docking, Harbor, Ship, Voyage
-from app.schemas import DockCreate, DockingCreate, HarborUpdate,HarborBase
+from app.schemas import DockCreate, DockingCreate,HarborBase
 
 SIZE_RANK = {
     VesselSize.SMALL: 1,
@@ -108,22 +108,7 @@ class HarborService:
     def create_harbor(self, payload: HarborBase) -> Harbor:
         return sev_create_harbor(self.db, payload)
 
-    def update_harbor(self, harbor_id: int, payload: HarborUpdate) -> Harbor:
-        data = payload.model_dump(exclude_unset=True)
-
-        harbor = self.get_harbor(harbor_id)
-
-        if "name" in data and data["name"] is not None:
-            existing = self.db.query(Harbor).filter(Harbor.name == data["name"], Harbor.id != harbor_id).first()
-            if existing:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="harbor name already taken")
-        
-        for field, value in data.items():
-            setattr(harbor, field, value)
-        
-        self.db.commit()
-        self.db.refresh(harbor)
-        return harbor
+    
 
 class HarborOperations:
     """Monitor and coordinate the operational state of one harbor."""

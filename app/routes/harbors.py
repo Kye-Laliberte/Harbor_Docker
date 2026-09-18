@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
 from app.dependencies import get_db
-from app.schemas import  HarborRead, HarborUpdate, DockRead, HarborBase
+from app.schemas import  HarborRead,  DockRead, HarborBase
 import app.enums as enums
 from app.services.harbor_service import HarborService, HarborOperations
 
@@ -46,12 +46,6 @@ def get_docks_above_size(harbor_id: int, min_size: enums.VesselSize, skip: int =
     if not isinstance(min_size, enums.VesselSize):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"min_size must be a valid VesselSize enum value, got {min_size}")
     return HarborOperations(db, harbor_id).docks_above_size(min_size, skip=skip, limit=limit)
-
-
-@router.put("/{harbor_id}/update", response_model=HarborRead, status_code=status.HTTP_200_OK)
-def update_harbor(harbor_id: int, payload: HarborUpdate, db: Session = Depends(get_db)):
-    """Update the details for an existing harbor."""
-    return HarborService(db).update_harbor(harbor_id,payload)
 
 
 @router.delete("/{harbor_id}", status_code=status.HTTP_204_NO_CONTENT)
