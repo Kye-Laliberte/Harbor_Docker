@@ -84,16 +84,33 @@ def test_get_ship():
     assert response.json()["id"] == ship.id
 
 
-def test_update_undocked_ship():
+def test_update_docked_ship():
     db = TestingSessionLocal()
-    ship = create_ship(db,name="test_ship_update")
+
+    harbor = create_harbor(db)
+    dock = create_dock(db, harbor.id,active=enums.DockStatus.ACTIVE,size=enums.VesselSize.SMALL)
+    
+    ship_payload = {
+        "ship_name": "test Ship",
+        "current_cargo": 0,
+        "registration_number": "12345",
+        "ship_status": enums.ShipStatus.DOCKED,
+        "cargo_capacity":1000,
+        "ship_size": enums.VesselSize.SMALL
+        }
+    ship_response = client.post(f"/ships/new?dock_id={dock.id}", json=ship_payload)
+    assert ship_response.status_code == 201
+    
+    ship = ship_response.json()
+    assert ship["ship_name"] == "test ship"
+    assert ship["ship_status"] == enums.ShipStatus.DOCKED
 
 
     payload = {
         "ship_name": "Updated Ship",
     }
 
-    response = client.put(f"/ships/{ship.id}/update", json=payload)
+    response = client.put(f"/ships/{ship["id"]}/update", json=payload)
     assert response.status_code == 200
     assert response.json()["ship_name"] == "updated ship"
 
