@@ -116,13 +116,14 @@ def test_update_ship_while_sailing_fails():
 
 
 
-#           deleate ship is not working yet
-#def test_delete_ship_requires_docked():
-#    db = TestingSessionLocal()
-#    harbor = create_harbor(db)
-#    dock = create_dock(db,harbor.id)
+#           deleate ship is not working yet need to move to soft del.
+"""
+def test_delete_ship_requires_docked():
+    db = TestingSessionLocal()
+    harbor = create_harbor(db)
+    dock = create_dock(db,harbor.id)
    
-#    ship_payload = {
+    ship_payload = {
         "ship_name": "old Ship",
         "current_cargo": 0,
         "registration_number": "oild_ship",
@@ -130,16 +131,16 @@ def test_update_ship_while_sailing_fails():
         "cargo_capacity":1000,
         "ship_size": enums.VesselSize.SMALL}
     
-#    ship_response = client.post(f"/ships/new?dock_id={dock.id}", json=ship_payload)
-#    ship = ship_response.json()
+    ship_response = client.post(f"/ships/new?dock_id={dock.id}", json=ship_payload)
+    ship = ship_response.json()
 
-#    response = client.delete(f"/ships/{ship["id"]}/delete")
-#    assert response.status_code == 204
+    response = client.delete(f"/ships/{ship["id"]}/delete")
+    assert response.status_code == 204
 
     # verify deletion
-#    response2 = client.get(f"/ships/{ship["id"]}/get")
-#    assert response2.status_code == 404
-
+    response2 = client.get(f"/ships/{ship["id"]}/get")
+    assert response2.status_code == 404
+"""
 
 def test_current_docking_lookup():
     db = TestingSessionLocal()
