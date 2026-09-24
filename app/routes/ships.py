@@ -29,12 +29,13 @@ def get_ship(ship_id: int, db: Session = Depends(get_db)):
 @router.put("/{ship_id}/update", response_model=ShipRead)
 def update_ship(ship_id: int, payload: ShipUpdate, db: Session = Depends(get_db)):
     """Update a ship using the provided fields."""
-    ship=shipService(db,ship_id)
+    shipsev=shipService(db,ship_id)
 
-    if ship.ship.ship_status is ShipStatus.SAILING:
+    if shipsev.ship.ship_status is ShipStatus.SAILING:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="cant update wile sailing")
-        
-    return ship.sev_update_ship(payload)
+
+
+    return shipsev.sev_update_ship(payload)
 
 
 @router.delete("/{ship_id}/delete", status_code=status.HTTP_204_NO_CONTENT)# need to swith ship and dock to soft deleat 

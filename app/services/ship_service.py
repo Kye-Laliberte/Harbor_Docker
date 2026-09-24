@@ -64,25 +64,22 @@ class shipService:
 
     def sev_update_ship(self, payload: ShipUpdate) -> Ship:
         """Update an existing ship with provided fields."""
-        if self.ship.ship_status is ShipStatus.DOCKED or self.ship.ship_size is ShipStatus.MAINTENANCE:
-            try:
-                dock_id=self.curent_dock().dock_id
-            except HTTPException:# new ship that hasent docked yet 
-                for field, value in payload.model_dump(exclude_unset=True).items():
-                            setattr(self.ship, field, value)
-                self.db.commit()
-                self.db.refresh(self.ship)
-                return self.ship
-
+        if self.ship.ship_status in {ShipStatus.DOCKED, ShipStatus.MAINTENANCE,}:
+            
+            dock_id=self.curent_dock().dock_id
+            
             dock = self.db.query(Dock).filter(Dock.id == dock_id).first()
             
-            if dock.cargo_capacity > payload.cargo_capacity:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="ship cargo_capacity to hight for dock")
+            if not dock:
+                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="dock selected not found.")
             
-            if dock.dock_size > payload.ship_size:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="ship_size to larg for dock")
+            if payload.current_cargo is not None:
+                if dock.cargo_capacity < payload.current_cargo:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="ship cargo_capacity to hight for dock")
+            if payload.ship_size is not None:
+                if dock.dock_size > payload.ship_size:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="ship_size to larg for dock")
             
-        
         for field, value in payload.model_dump(exclude_unset=True).items():
             setattr(self.ship, field, value)
 

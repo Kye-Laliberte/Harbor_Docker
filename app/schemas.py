@@ -111,7 +111,14 @@ class ShipUpdate(BaseModel):
         if cls is None:
             return value
         return value.strip().lower()
-            
+    
+    @model_validator(mode="after")
+    def check_cargo_vs_capacity(self):
+        if (self.current_cargo is not None 
+        and self.cargo_capacity is not None
+        and self.current_cargo > self.cargo_capacity):
+            raise ValueError("current_cargo cannot exceed cargo_capacity")
+        return self
 
 class ShipRead(ShipBase):
     id: int
