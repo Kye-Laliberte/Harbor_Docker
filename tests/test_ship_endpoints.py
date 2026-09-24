@@ -104,12 +104,15 @@ def test_update_ship_while_sailing_fails():
 
     payload = {
         "ship_name": "Should Fail",
-        "ship_status": enums.ShipStatus.SAILING
     }
 
     response = client.put(f"/ships/{ship.id}/update", json=payload)
-    assert response.status_code == 300
-    assert "cant update wile sailing" in response.json()["detail"]
+    assert response.status_code == 400
+
+    response2 = client.get(f"/ships/{ship.id}/get")
+    assert response2.status_code == 200
+    assert response2.json()["id"] == ship.id
+    assert response2.json()["ship_name"] == "update_logic_test_ship"
 
 
 

@@ -32,7 +32,7 @@ def update_ship(ship_id: int, payload: ShipUpdate, db: Session = Depends(get_db)
     ship=shipService(db,ship_id)
 
     if ship.ship.ship_status is ShipStatus.SAILING:
-        raise HTTPException(status_code=300,detail="cant update wile sailing")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="cant update wile sailing")
         
     return ship.sev_update_ship(payload)
 
