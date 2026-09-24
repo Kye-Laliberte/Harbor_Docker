@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.main import app
+from test_helpers import create_sample_harbor, create_sample_dock
 from app.dependencies import get_db
 from app.models import Base, Harbor, Dock
 import app.enums as enums
@@ -36,36 +37,6 @@ def override_get_db():
 app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
-
-
-# -------------------------------------------------------------------
-# Helpers
-# -------------------------------------------------------------------
-
-def create_sample_harbor(db, name="Test Harbor"):
-    harbor = Harbor(
-        name=name,
-        timezone="UTC",
-        latitude=10.0,
-        longitude=20.0)
-    
-    db.add(harbor)
-    db.commit()
-    db.refresh(harbor)
-    return harbor
-
-def create_sample_dock(db, harbor_id,size=enums.VesselSize.MEDIUM, active=enums.DockStatus.ACTIVE):
-    dock = Dock(
-        dock_code = str(harbor_id),
-        harbor_id=harbor_id,
-        dock_size=size,
-        dock_status=active,
-        cargo_capacity = size*1000)
-
-    db.add(dock)
-    db.commit()
-    db.refresh(dock)
-    return dock
 
 
 # -------------------------------------------------------------------

@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from test_harbor import create_sample_harbor
+from test_helpers import create_sample_harbor, create_sample_dock
 from app.main import app
 from app.dependencies import get_db
 from app.models import Base, Harbor, Dock
@@ -39,24 +39,6 @@ app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
 
-
-# -------------------------------------------------------------------
-# Helpers
-# -------------------------------------------------------------------
-
-
-def create_sample_dock(db, harbor_id,size=enums.VesselSize.MEDIUM, active=enums.DockStatus.ACTIVE):
-    dock = Dock(
-        dock_code = str(harbor_id),
-        harbor_id=harbor_id,
-        dock_size=size,
-        dock_status=active,
-        cargo_capacity = size*1000)
-
-    db.add(dock)
-    db.commit()
-    db.refresh(dock)
-    return dock
 
 # -------------------------------------------------------------------
 # Tests
