@@ -69,11 +69,17 @@ def test_create_ship():
 
     response = client.post(f"/ships/new?dock_id={dock.id}", json=payload)
     assert response.status_code == 201
-
+    
+    dock_data = client.get(f"/docks/{dock.id}/get")
+    assert dock_data.status_code == 200
+    assert dock_data.json()["id"] == dock.id
+    assert dock_data.json()["dock_status"] == enums.DockStatus.INACTIVE
+    
     data = response.json()
+
     assert data["ship_name"] == "new ship"
     assert data["ship_status"] == enums.ShipStatus.DOCKED
-
+    
 
 def test_get_ship():
     db = TestingSessionLocal()
