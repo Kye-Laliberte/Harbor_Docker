@@ -104,12 +104,14 @@ class ShipUpdate(BaseModel):
     ship_status: Optional[enums.ShipStatus] = None
     cargo_capacity: Optional[float] = Field(None, ge=0)
     ship_size: Optional[enums.VesselSize] = None
-
+    
     @field_validator("ship_name", "registration_number")
     @classmethod
     def normalizes(cls, value: str) -> str:
+        if cls is None:
+            return value
         return value.strip().lower()
-
+            
 
 class ShipRead(ShipBase):
     id: int
