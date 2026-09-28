@@ -1,6 +1,6 @@
 from typing import List, Optional
-from datetime import datetime, timedelta, timezone
-
+from datetime import datetime, timezone
+import logging
 from fastapi import HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -9,7 +9,7 @@ import app.enums as enums
 from app.models import Docking, Ship, Dock, Voyage
 from app.schemas import DockingCreate
 from app.services.ship_service import shipService
-from app.services.dock_service import sev_update_dock, sev_get_dock
+from app.services.dock_service import sev_get_dock
 
 class DockingService:
 
@@ -77,11 +77,11 @@ def validate_docking_input(dock_id: int, ship_id: int,db: Session,
     """Validate docking business rules before creating a docking."""
 
     dock=sev_get_dock(db=db,dock_id=dock_id)
-    if str(dock.dock_status.value) != enums.DockStatus.ACTIVE.value:
+    if dock.dock_status != enums.DockStatus.ACTIVE:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Dock is not active for new dockings (current status: {dock.dock_status.value})")
 
     ship = shipService(db=db,ship_id=ship_id).ship
-    if not allow_initial_docking and str(ship.ship_status.value) != enums.ShipStatus.SAILING.value:
+    if not allow_initial_docking and ship.ship_status != enums.ShipStatus.SAILING:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Ship is not sailing (current status: {ship.ship_status.value})")
 
     if not _check_size_compatibility(dock, ship):
