@@ -2,24 +2,40 @@ services:
   postgres:
     image: postgres:16
     container_name: harbor-postgres
+    restart: unless-stopped
+
+    env_file: .env 
+    
     environment:
-      POSTGRES_USER: harbor_user
-      POSTGRES_PASSWORD: harbor_password
-      POSTGRES_DB: harbor_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD:  ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
     ports:
       - "5432:5432"
+
     volumes:
       - harbor_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s 
+      
 
   api:
     build: .
     container_name: harbor-api
+    restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://harbor_user:harbor_password@postgres:5432/harbor_db
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
 volumes:
   harbor_data:

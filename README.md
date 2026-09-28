@@ -365,6 +365,9 @@ SQLALCHEMY_ECHO       # Enable SQL logging (default: True)
 
 ### Example .env File
 ```
+POSTGRES_USER=harbor_user
+POSTGRES_PASSWORD=harbor_password
+POSTGRES_DB=harbor_db
 DATABASE_URL=postgresql://harbor_user:secure_password@localhost:5432/harbor_db
 SQLALCHEMY_ECHO=False
 ```
@@ -412,7 +415,7 @@ This allows:
 ### PostgreSQL Service
 - **Image**: postgres:15
 - **Port**: 5432
-- **Database**: harbor_db
+- **Database**:  from .env
 - **Volumes**: Persisted to `postgres_data/`
 - **Initialization**: Runs schema.sql on first start
 
