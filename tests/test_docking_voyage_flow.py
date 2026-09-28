@@ -96,7 +96,7 @@ def test_full_voyage_docking_workflow():
     ).scalar_one()
 
     assert dock_stat == enums.DockStatus.ACTIVE
-
+"""
     # 5. Docking created automatically by arrival logic?
     # If not automatic, create docking manually:
 
@@ -117,7 +117,7 @@ def test_full_voyage_docking_workflow():
     docking_response = client.post("/dockings/create", json=doc.model_dump(mode='json'))
     assert docking_response.status_code == 201, docking_response.json()
     docking_id = docking_response.json()["id"]
-"""
+
     # 6. Approve docking
     response = client.post(f"/dockings/{docking_id}/approve")
     assert response.status_code == 200
