@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from test_helpers import create_sample_harbor as create_harbor
-from test_helpers import create_ship, dock_ship 
+from test_helpers import create_ship 
 from test_helpers import create_sample_dock as create_dock
 from app.main import app
 from app.dependencies import get_db

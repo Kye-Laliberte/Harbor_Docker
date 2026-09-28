@@ -74,7 +74,7 @@ class VoyageService:
         if ship.ship_status not in (ShipStatus.DOCKED, ShipStatus.SAILING):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ship cannot leave dock while {ship.ship_status.value}",)
+                detail=f"Ship cannot leave dock while {ship.ship_status}",)
 
         docking = (
             self.db.query(Docking)
@@ -102,6 +102,7 @@ class VoyageService:
 
         self.db.commit()
         self.db.refresh(self.voyage)
+        self.db.refresh(ship)
         return self.voyage
 
 
