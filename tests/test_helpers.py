@@ -1,19 +1,20 @@
-from app.models import Base, Harbor, Dock, Ship, Docking
+from app.models import Base, Harbor, Dock, Ship, Docking,Voyage
+from datetime import datetime, timezone
 import app.enums as enums
 
-def create_sample_harbor(db, name="Test Harbor"):
+def create_sample_harbor(db, name="Test Harbor",lat=10.0, long =20.0):
     harbor = Harbor(
         name=name,
         timezone="UTC",
-        latitude=10.0,
-        longitude=20.0)
+        latitude=lat,
+        longitude=long)
     
     db.add(harbor)
     db.commit()
     db.refresh(harbor)
     return harbor
 
-def create_sample_dock(db, harbor_id,size=enums.VesselSize.MEDIUM, active=enums.DockStatus.ACTIVE):
+def create_sample_dock(db, harbor_id,size=enums.VesselSize.SMALL, active=enums.DockStatus.ACTIVE):
     dock = Dock(
         dock_code = str(harbor_id),
         harbor_id=harbor_id,
@@ -44,14 +45,29 @@ def create_ship(db, name="Test Ship", status=enums.ShipStatus.DOCKED, cargo_capa
 
 def dock_ship(db, ship_id, dock_id):
     docking = Docking(
-        ship_id=ship_id,
-        dock_id=dock_id,
-        arrival_time="2024-01-01T00:00:00",
+        ship_id = ship_id,
+        dock_id = dock_id,
+        arrival_date = datetime(2026, 4, 1, tzinfo=timezone.utc),
         purpose = "first docking",
-        departure_time=None,
+        departure_date = None,
         ship_clearance_status = enums.ShipClearanceStatus.APPROVED)
     
     db.add(docking)
     db.commit()
     db.refresh(docking)
     return docking
+
+def create_voyage(db, ship_id, origin_id, dest_id):
+    voyage = Voyage(
+        ship_id=ship_id,
+        departure_harbor_id=origin_id,
+        destination_harbor_id=dest_id,
+        scheduled_departure="2024-01-01T00:00:00",
+        arrival_date=None,
+        departure_date=None,
+        voyage_status=enums.VoyageStatus.SCHEDULED
+    )
+    db.add(voyage)
+    db.commit()
+    db.refresh(voyage)
+    return voyage
