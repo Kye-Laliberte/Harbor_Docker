@@ -151,7 +151,7 @@ class VoyageBase(BaseModel):
 
 class VoyageCreate(VoyageBase):
     ship_id: int
-    departure_date: Optional[datetime] = None
+    departure_date: datetime
     estimated_arrival: Optional[datetime] = None
     arrival_date: Optional[datetime] = None
     travel_status: Optional[enums.VoyageStatus] = enums.VoyageStatus.SCHEDULED
