@@ -63,7 +63,7 @@ def leave_voyage_dock(ship_id: int, db: Session = Depends(get_db)):
     if not voyage:
         HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="ship not found")
 
-    return VoyageService(db=db,v_id=voyage.id).leave_dock(ship_id)
+    return VoyageService(db=db,v_id=voyage.id).leave_dock()
 
 @router.post("/{voyage_id}/update_destination/{harbor_id}/", status_code=status.HTTP_200_OK)
 def update_voyage_destination(harbor_id:int, voyage_id:int, payload: Updatedates,db:Session =Depends(get_db)):

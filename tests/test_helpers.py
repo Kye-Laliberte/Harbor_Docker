@@ -1,7 +1,7 @@
 from app.models import Base, Harbor, Dock, Ship, Docking,Voyage
 from datetime import datetime, timezone
 import app.enums as enums
-
+from sqlalchemy import create_engine,text
 def create_sample_harbor(db, name="Test Harbor",lat=10.0, long =20.0):
     harbor = Harbor(
         name=name,
@@ -56,6 +56,18 @@ def dock_ship(db, ship_id, dock_id):
     db.commit()
     db.refresh(docking)
     return docking
+
+def get_dock_stat(db,dock_id):
+    dock_stat = db.execute(text("SELECT dock_status FROM docks WHERE id = :dock_id"),
+                           {"dock_id": dock_id},).scalar_one()
+    if dock_stat: 
+        return dock_stat
+    
+def get_ship_stat(db,ship_id):
+    ship_status = db.execute(text("SELECT ship_status from ships WHERE id = :ship_id "),
+                             {"ship_id":ship_id}).scalar_one()
+    if ship_status:
+        return ship_status
 
 def create_voyage(db, ship_id, origin_id, dest_id):
     voyage = Voyage(

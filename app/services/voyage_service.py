@@ -99,11 +99,13 @@ class VoyageService:
         ship.ship_status = ShipStatus.SAILING
         self.voyage.departure_date = departure_date
         self.voyage.travel_status = VoyageStatus.DEPARTED
-
+        self.db.commit()
+        
         self.db.refresh(self.voyage)
         self.db.refresh(ship)
         self.db.refresh(docking)
-        self.db.commit()
+        
+        
         return self.voyage
 
 
@@ -239,7 +241,6 @@ class VoyageService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
         self.voyage.arrival_date = arrival_date
         self.voyage.travel_status = VoyageStatus.ARRIVED
-        ship.ship_status = ShipStatus.DOCKED
         self.db.commit()
         self.db.refresh(self.voyage)
         self.db.refresh(ship)

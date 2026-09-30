@@ -58,6 +58,8 @@ class DockingService:
         ship.ship_status = enums.ShipStatus.DOCKED
         dock.dock_status = enums.DockStatus.INACTIVE
         self.db.commit()
+        self.db.refresh(dock)
+        self.db.refresh(ship)
         self.db.refresh(self.docking)
         return self.docking
 
