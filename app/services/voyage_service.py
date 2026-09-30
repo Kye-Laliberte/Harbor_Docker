@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.models import Dock, Docking, Ship, Voyage
 from app.schemas import Updatedates, VoyageArrivalUpdate, VoyageCreate
 from app.services.harbor_service import sev_list_docks_above_size as size_filter
-from app.enums import DockStatus, ShipClearanceStatus, ShipStatus, VoyageStatus
+from app.enums import DockStatus, ShipClearanceStatus, ShipStatus, VoyageStatus 
 from app.services.harbor_service import HarborService
 from app.services.travel_time_service import estimate_arrival
 from app.services.ship_service import shipService
@@ -100,9 +100,10 @@ class VoyageService:
         self.voyage.departure_date = departure_date
         self.voyage.travel_status = VoyageStatus.DEPARTED
 
-        self.db.commit()
         self.db.refresh(self.voyage)
         self.db.refresh(ship)
+        self.db.refresh(docking)
+        self.db.commit()
         return self.voyage
 
 
