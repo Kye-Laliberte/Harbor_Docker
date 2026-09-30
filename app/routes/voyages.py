@@ -53,10 +53,16 @@ def approve_voyage(voyage_id: int, db: Session = Depends(get_db)):
     """Approve a scheduled voyage before departure."""
     return VoyageService(db=db, v_id=voyage_id).approve_voyage()
 
-@router.post("/{voyage_id}/leave_dock", response_model=VoyageRead, status_code=status.HTTP_200_OK)
-def leave_voyage_dock(voyage_id: int, db: Session = Depends(get_db)):
+@router.post("/{ship_id}/leave_dock", response_model=VoyageRead, status_code=status.HTTP_200_OK)
+def leave_voyage_dock(ship_id: int, db: Session = Depends(get_db)):
     """Release the ship from its dock and mark the voyage departed."""
-    return VoyageService(db=db, v_id=voyage_id).leave_dock()
+    voyage = (db.query(Voyage)
+              .filter(Voyage.ship_id == ship_id)
+              .filter(Voyage.travel_status ==enums.VoyageStatus.APPROVED).first())
+    if not voyage:
+        HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="ship not found")
+
+    return VoyageService(db=db,v_id=None).leave_dock(ship_id)
 
 @router.post("/{voyage_id}/update_destination/{harbor_id}/", status_code=status.HTTP_200_OK)
 def update_voyage_destination(harbor_id:int, voyage_id:int, payload: Updatedates,db:Session =Depends(get_db)):
