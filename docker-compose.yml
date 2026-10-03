@@ -32,7 +32,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://harbor_user:harbor_password@postgres:5432/harbor_db
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      API_KEY: ${API_KEY}
+      URL: ${URL}
     depends_on:
       postgres:
         condition: service_healthy
