@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine,text
 from sqlalchemy.orm import sessionmaker
-from test_helpers import create_sample_dock,create_sample_harbor,create_ship,dock_ship,get_dock_stat,get_ship_stat
+from test_helpers import authenticated_client, create_sample_dock,create_sample_harbor,create_ship,dock_ship,get_dock_stat,get_ship_stat
 from app.main import app
 from app.dependencies import get_db
 from app.models import Base, Harbor, Dock, Ship, Voyage, Docking
@@ -40,7 +40,7 @@ def override_get_db():
 
 
 app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
+client = authenticated_client(app)
 
 
 

@@ -2,6 +2,16 @@ from app.models import Base, Harbor, Dock, Ship, Docking,Voyage
 from datetime import datetime, timezone
 import app.enums as enums
 from sqlalchemy import create_engine,text
+
+
+def authenticated_client(app):
+    from fastapi.testclient import TestClient
+    from app.core.config import settings
+
+    settings.API_KEY = "test-api-key"
+    return TestClient(app, headers={"X-API-Key": settings.API_KEY})
+
+
 def create_sample_harbor(db, name="Test Harbor",lat=10.0, long =20.0):
     harbor = Harbor(
         name=name,

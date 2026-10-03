@@ -3,7 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from test_helpers import create_sample_harbor as create_harbor
+from test_helpers import authenticated_client, create_sample_harbor as create_harbor
 from test_helpers import create_ship 
 from test_helpers import create_sample_dock as create_dock
 from app.main import app
@@ -39,7 +39,7 @@ def override_get_db():
 
 app.dependency_overrides[get_db] = override_get_db
 
-client = TestClient(app)
+client = authenticated_client(app)
 
 
 
