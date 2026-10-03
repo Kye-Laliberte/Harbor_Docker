@@ -1,0 +1,58 @@
+{
+  "info": {
+    "_postman_id": "4f701378-8536-47f3-a091-4821b6226c4d",
+    "name": "Harbor API",
+    "description": "Harbor API requests authenticated with the X-API-Key environment variable.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "X-API-Key", "type": "string" },
+      { "key": "value", "value": "{{api_key}}", "type": "string" },
+      { "key": "in", "value": "header", "type": "string" }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{base_url}}/", "host": ["{{base_url}}"], "path": [""] }
+      }
+    },
+    {
+      "name": "Ships",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{base_url}}/ships/list", "host": ["{{base_url}}"], "path": ["ships", "list"] }
+      }
+    },
+    {
+      "name": "Harbors",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{base_url}}/harbors/list", "host": ["{{base_url}}"], "path": ["harbors", "list"] }
+      }
+    },
+    {
+      "name": "Docks",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{base_url}}/docks/list", "host": ["{{base_url}}"], "path": ["docks", "list"] }
+      }
+    },
+    {
+      "name": "Voyages",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{base_url}}/voyages/list", "host": ["{{base_url}}"], "path": ["voyages", "list"] }
+      }
+    }
+  ]
+}
