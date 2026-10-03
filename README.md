@@ -218,6 +218,12 @@ GET /voyages/predict?ship_id=1&departure_harbor_id=1&destination_harbor_id=2
 
 The response contains predicted ship speed in km/h, route distance in km, and average voyage time in hours. Completed voyages recorded through `POST /voyages/{voyage_id}/arrive` provide the supervised training samples. Before valid training data exists, `model_trained` is `false` and the API uses a 20 km/h cold-start baseline.
 
+## Postman
+
+Import `postman/Harbor API.postman_collection.json` and `postman/Harbor Local.postman_environment.json` into Postman, then select the **Harbor Local** environment. Set its `api_key` secret value to the value of `api_key` in your local `.env` file. Keep that value local and do not share or commit it. Requests send it in the `X-API-Key` header automatically.
+
+The local base URL is `http://localhost:8000`. Start the API with Docker Compose before sending requests. Requests without the configured key receive `401`; if no key is configured, the API returns `503`.
+
 ## ⚙️ Business Rules & Constraints
 
 ### Docking Validation Rules
@@ -360,6 +366,7 @@ pytest tests/ --cov=app --cov-report=html
 ```
 DATABASE_URL          # PostgreSQL connection string
                       # Format: postgresql://user:password@host:port/database
+API_KEY               # API key checked in the X-API-Key request header
 SQLALCHEMY_ECHO       # Enable SQL logging (default: True)
 ```
 
@@ -369,6 +376,7 @@ POSTGRES_USER=harbor_user
 POSTGRES_PASSWORD=harbor_password
 POSTGRES_DB=harbor_db
 DATABASE_URL=postgresql://harbor_user:secure_password@localhost:5432/harbor_db
+api_key=replace_with_a_private_key
 SQLALCHEMY_ECHO=False
 ```
 
@@ -449,7 +457,6 @@ GET /dockings/list?skip=20&limit=50
 
 ## 🚧 Future Enhancements
 
-- [ ] Authentication & Authorization (JWT tokens)
 - [ ] Role-based access control (Captain, Harbor Master, Admin)
 - [ ] Rate limiting per user/IP
 - [ ] WebSocket support for real-time updates
