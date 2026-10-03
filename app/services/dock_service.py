@@ -1,3 +1,4 @@
+import logging
 from typing import List
 
 from fastapi import HTTPException, status
@@ -41,16 +42,21 @@ def sev_update_dock(db: Session, dock_id: int, payload: DockUpdate) -> Dock:
     if data.get("harbor_id") is not None:
         harbor = db.query(Harbor).filter(Harbor.id == data["harbor_id"]).first()
         if not harbor:
+              # Rollback any changes to avoid leaving the dock in an inconsistent state
+            logging.error(f"Harbor with id {data['harbor_id']} not found while updating dock {dock.id}")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Harbor not found")
-
+    
+    if harbor and dock.harbor_id != harbor.id:
+        logging.error(f"Dock with id {dock.id} does not belong to harbor {harbor.id}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Dock does not belong to the selected harbor",)
+    
     for field, value in data.items():
         setattr(dock, field, value)
 
     db.commit()
     db.refresh(dock)
     return dock
-
-
 
 
 class DockService:
@@ -75,6 +81,8 @@ class DockService:
         if data.get("harbor_id") is not None:
             harbor = self.db.query(Harbor).filter(Harbor.id == data["harbor_id"]).first()
             if not harbor:
+                self.db.rollback()  # Rollback any changes to avoid leaving the dock in an inconsistent state
+                logging.error(f"Harbor with id {data['harbor_id']} not found while updating dock {self.dock.id}")
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Harbor not found")
 
         for field, value in data.items():
@@ -96,6 +104,7 @@ class DockService:
     def delete_dock(self) -> None:
         """"""
         if self.in_dock():
+            logging.error(f"Attempted to delete dock {self.dock_id} while a ship is currently docked.")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="ship curently in dock")
         self.db.delete(self.dock)
         self.db.commit()

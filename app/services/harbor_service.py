@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import logging
 from typing import Any, List
 
 from fastapi import HTTPException, status
@@ -13,7 +14,6 @@ SIZE_RANK = {
     VesselSize.MEDIUM: 2,
     VesselSize.LARGE: 3,
 }
-
 
 def _normalize_size(min_size: VesselSize | int) -> VesselSize:
     """Accept either an enum value or its integer rank and normalize it."""
@@ -126,6 +126,7 @@ class HarborOperations:
         dock = (self.db.query(Dock)
             .filter(Dock.id == dock_id, Dock.harbor_id == self.harbor.id).first())
         if dock is None:
+            logging.error(f"Dock with id {dock_id} not found in harbor {self.harbor.id}")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dock not found")
 
         docking = (self.db.query(Docking)
@@ -206,10 +207,11 @@ class HarborOperations:
         harbor = self.get_harbor()
         dock = self.db.query(Dock).filter(Dock.id == payload.dock_id).first()
         if dock is None:
+            logging.error(f"Dock with id {payload.dock_id} not found in harbor {harbor.id}")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dock not found")
         if dock.harbor_id != harbor.id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+            logging.error(f"Dock with id {payload.dock_id} does not belong to harbor {harbor.id}")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Dock does not belong to the selected harbor",)
 
         from app.services.docking_service import sev_create_docking
@@ -219,8 +221,7 @@ class HarborOperations:
     def release_docking(self,docking_id: int,
         departure_date: datetime | None = None,) -> Docking:
         """Release a ship and its dock together."""
-        docking = (
-            self.db.query(Docking).join(Dock)
+        docking = (self.db.query(Docking).join(Dock)
             .filter(Docking.id == docking_id, Dock.harbor_id == self.harbor.id).first())
         
         if docking is None:
@@ -243,14 +244,18 @@ class HarborOperations:
         ship = self.db.query(Ship).filter(Ship.id == docking.ship_id).first()
         if ship is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
-
-        docking.departure_date = released_at
-        docking.ship_clearance_status = ShipClearanceStatus.APPROVED
-        docking.dock.dock_status = DockStatus.ACTIVE
-        ship.ship_status = ShipStatus.SAILING
-
-        self.db.commit()
+        try:
+            docking.departure_date = released_at
+            docking.ship_clearance_status = ShipClearanceStatus.APPROVED
+            docking.dock.dock_status = DockStatus.ACTIVE
+            ship.ship_status = ShipStatus.SAILING
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            logging.error(f"Error occurred while releasing docking {docking_id}: {e}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to release docking")
         self.db.refresh(docking)
+
         return docking
 
     def list_dockings(self,skip: int =0, limit:int = 100) -> List[Docking]:

@@ -80,6 +80,8 @@ def validate_docking_input(dock_id: int, ship_id: int,db: Session,
 
     dock=sev_get_dock(db=db,dock_id=dock_id)
     if dock.dock_status != enums.DockStatus.ACTIVE:
+        db.rollback()  # Rollback any changes to avoid leaving the dock in an inconsistent state
+        logging.error(f"Dock with id {dock_id} is not active for new dockings (current status: {dock.dock_status.value})")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Dock is not active for new dockings (current status: {dock.dock_status.value})")
 
     ship = shipService(db=db,ship_id=ship_id).ship
