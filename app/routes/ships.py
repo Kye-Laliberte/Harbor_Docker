@@ -31,6 +31,9 @@ def update_ship(ship_id: int, payload: ShipUpdate, db: Session = Depends(get_db)
     """Update a ship using the provided fields."""
     shipsev=shipService(db,ship_id)
 
+    if payload is None:
+        return shipsev.ship  # No update needed if payload is empty
+
     if shipsev.ship.ship_status is ShipStatus.SAILING:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="cant update wile sailing")
 
