@@ -29,12 +29,22 @@ services:
     build: .
     container_name: harbor-api
     restart: unless-stopped
+    env_file: .env
     ports:
       - "8000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import os, urllib.request; request = urllib.request.Request('http://localhost:8000/', headers={'X-API-Key': os.environ.get('API_KEY', '')}); urllib.request.urlopen(request, timeout=3).close()"
+      interval: 2s
+      timeout: 4s
+      retries: 12
+      start_period: 10s
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       API_KEY: ${API_KEY}
-      URL: ${URL}
     depends_on:
       postgres:
         condition: service_healthy
