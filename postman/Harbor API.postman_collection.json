@@ -28,15 +28,17 @@
         "method": "GET",
         "header": [],
         "url": { "raw": "{{base_url}}/ships/list", "host": ["{{base_url}}"], "path": ["ships", "list"] }
-      }
+      },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('ships endpoint returns a list', function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.be.an('array');", "});"] } }]
     },
     {
       "name": "Harbors",
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{base_url}}/harbors/list", "host": ["{{base_url}}"], "path": ["harbors", "list"] }
-      }
+        "url": { "raw": "{{base_url}}/harbors/home", "host": ["{{base_url}}"], "path": ["harbors", "home"] }
+      },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('harbors endpoint returns a list', function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.be.an('array');", "});"] } }]
     },
     {
       "name": "Docks",
