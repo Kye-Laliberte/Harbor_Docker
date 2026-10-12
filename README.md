@@ -220,9 +220,15 @@ The response contains predicted ship speed in km/h, route distance in km, and av
 
 ## Postman
 
-Import `postman/Harbor API.postman_collection.json` and `postman/Harbor Local.postman_environment.json` into Postman, then select the **Harbor Local** environment. Set its `api_key` secret value to the value of `api_key` in your local `.env` file. Keep that value local and do not share or commit it. Requests send it in the `X-API-Key` header automatically.
+Import `postman/Harbor API.postman_collection.json` and `postman/Harbor_API.postman_env.json` into Postman, then select the **Harbor Local** environment. Its `base_url` is `http://localhost:8000`, matching the API port published by Docker Compose. Set its `api_key` secret value to the value of `API_KEY` in your local `.env` file. Keep that value local and do not share or commit it. Requests send it in the `X-API-Key` header automatically, and the collection checks that each request returns a successful status.
 
-The local base URL is `http://localhost:8000`. Start the API with Docker Compose before sending requests. Requests without the configured key receive `401`; if no key is configured, the API returns `503`.
+Run the complete automated workflow from PowerShell at the repository root:
+
+```powershell
+.\scripts\test-api.ps1
+```
+
+The script builds and starts the Docker API and database, applies Alembic migrations, then runs the collection through Newman on the Compose network. The tests cover missing-key rejection, authenticated health, and successful list responses. Newman is run in a disposable Docker container; no Node.js or globally installed Postman CLI is required. For GUI use, set the local Postman environment's `api_key` secret to `API_KEY` from `.env`.
 
 ## ⚙️ Business Rules & Constraints
 
