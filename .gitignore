@@ -5,8 +5,10 @@ __pycache__/
 
 
 .env
+postman/Harbor_API.postman_env.json
 
 
+postman/*
 
 
 .git

@@ -48,7 +48,7 @@ def get_docks_above_size(harbor_id: int, min_size: enums.VesselSize, skip: int =
     return HarborOperations(db, harbor_id).docks_above_size(min_size, skip=skip, limit=limit)
 
 
-@router.delete("/{harbor_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{harbor_id}/delete", status_code=status.HTTP_204_NO_CONTENT)
 def delete_harbor(harbor_id: int, db: Session = Depends(get_db)):
     """Delete a harbor when it has no attached docks."""
     HarborOperations(db,harbor_id).delete_harbor()
