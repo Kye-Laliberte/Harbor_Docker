@@ -1,3 +1,4 @@
+
 {
   "info": {
     "_postman_id": "4f701378-8536-47f3-a091-4821b6226c4d",
@@ -5,6 +6,7 @@
     "description": "Harbor API requests authenticated with the X-API-Key environment variable.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+
   "auth": {
     "type": "apikey",
     "apikey": [
@@ -15,13 +17,51 @@
   },
   "item": [
     {
+      "name": "Rejects missing API key",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{base_url}}/", "host": ["{{base_url}}"], "path": [""] },
+        "auth": { "type": "noauth" }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('missing API key is rejected', function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "Health",
       "request": {
         "method": "GET",
         "header": [],
         "url": { "raw": "{{base_url}}/", "host": ["{{base_url}}"], "path": [""] }
-      }
+      },
+
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('health endpoint responds successfully', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json().message).to.eql('Harbor API');",
+              "});"
+            ]
+          }
+        }
+      ]
     },
+
     {
       "name": "Ships",
       "request": {
@@ -31,6 +71,7 @@
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('ships endpoint returns a list', function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.be.an('array');", "});"] } }]
     },
+
     {
       "name": "Harbors",
       "request": {
@@ -45,16 +86,18 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{base_url}}/docks/list", "host": ["{{base_url}}"], "path": ["docks", "list"] }
-      }
+        "url": { "raw": "{{base_url}}/docks/getall", "host": ["{{base_url}}"], "path": ["docks", "getall"] }
+      },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('docks endpoint returns a list', function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.be.an('array');", "});"] } }]
     },
     {
       "name": "Voyages",
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{base_url}}/voyages/list", "host": ["{{base_url}}"], "path": ["voyages", "list"] }
-      }
+        "url": { "raw": "{{base_url}}/voyages/getall", "host": ["{{base_url}}"], "path": ["voyages", "getall"] }
+      },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('voyages endpoint returns a list', function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.be.an('array');", "});"] } }]
     }
   ]
 }
