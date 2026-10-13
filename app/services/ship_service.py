@@ -49,12 +49,12 @@ class shipService:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                 detail="dock_id is required when creating a docked or maintenance ship",)
 
+            self.db.flush()  # Assign the ship ID before validating the initial docking payload.
             docking_payload = DockingCreate(
             ship_id=ship.id, dock_id=dock_id,
             arrival_date=datetime.now(timezone.utc),
             purpose="initial docking",)
 
-            self.db.flush()  # Flush to assign an ID to the ship before creating docking
             try:
                 sev_create_docking(self.db, docking_payload, allow_initial_docking=True)
             except HTTPException as e:
