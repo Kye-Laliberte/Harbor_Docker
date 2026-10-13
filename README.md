@@ -220,15 +220,22 @@ The response contains predicted ship speed in km/h, route distance in km, and av
 
 ## Postman
 
-Import `postman/Harbor API.postman_collection.json` and `postman/Harbor_API.postman_env.json` into Postman, then select the **Harbor Local** environment. Its `base_url` is `http://localhost:8000`, matching the API port published by Docker Compose. Set its `api_key` secret value to the value of `API_KEY` in your local `.env` file. Keep that value local and do not share or commit it. Requests send it in the `X-API-Key` header automatically, and the collection checks that each request returns a successful status.
+Import `postman/Harbor API.postman_collection.json` and `postman/Harbor_API.postman_env.json` into Postman, then select the **Harbor Local** environment. For the Postman desktop app, keep `base_url` set to `http://localhost:8000`, which is the API port published by Docker Compose. Set the environment's `api_key` secret value to the value of `API_KEY` in your local `.env` file. Keep that value local and do not share or commit it. Requests send it in the `X-API-Key` header automatically.
 
-Run the complete automated workflow from PowerShell at the repository root:
+Before sending requests from the desktop app, start the API and apply migrations from PowerShell at the repository root:
+
+```powershell
+docker compose up --build -d api
+docker compose exec -T api alembic upgrade head
+```
+
+For the automated Newman run, use the same selected collection via the repository script:
 
 ```powershell
 .\scripts\test-api.ps1
 ```
 
-The script builds and starts the Docker API and database, applies Alembic migrations, then runs the collection through Newman on the Compose network. The tests cover missing-key rejection, authenticated health, and successful list responses. Newman is run in a disposable Docker container; no Node.js or globally installed Postman CLI is required. For GUI use, set the local Postman environment's `api_key` secret to `API_KEY` from `.env`.
+The script builds and starts the API and database, applies Alembic migrations, and runs the collection in a disposable Newman container. Inside Docker Compose, Newman connects to `http://api:8000` using the Compose service name; it must not use `localhost`, which would point back to the Newman container itself. Newman gets `API_KEY` from `.env`, so no Postman environment export or separately configured `POSTMAN_BASE_URL` is needed. Neither the workflow nor the collection calls prediction or model-training endpoints.
 
 ## ⚙️ Business Rules & Constraints
 
