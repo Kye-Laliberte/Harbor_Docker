@@ -653,7 +653,7 @@
                   "  pm.test.skip('no ship id to clean up');",
                   "}",
                   "pm.test('cleanup ship request is acceptable', function () {",
-                  "    pm.expect([200, 204, 400]).to.include(pm.response.code);",
+                  "    pm.expect([200, 404, 400]).to.include(pm.response.code);",
                   "});",
                   "console.log('Cleanup: ship status code = ' + pm.response.code);"
                 ]
