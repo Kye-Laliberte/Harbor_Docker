@@ -188,3 +188,31 @@ def test_current_docking_lookup():
     assert data["dock_id"] == dock.id
     assert data["ship_id"] == ship["id"]
     assert data["departure_date"] is None
+
+
+def test_delete_ship_removes_its_dockings_and_releases_dock():
+    db = TestingSessionLocal()
+    harbor = create_harbor(db, name="ship-delete-harbor")
+    dock = create_dock(db, harbor.id)
+    ship_payload = {
+        "ship_name": "ship for delete test",
+        "current_cargo": 0,
+        "registration_number": "ship-delete-test",
+        "ship_status": enums.ShipStatus.DOCKED,
+        "cargo_capacity": 1000,
+        "ship_size": enums.VesselSize.SMALL,
+    }
+    ship_response = client.post(
+        f"/ships/new?dock_id={dock.id}",
+        json=ship_payload,
+    )
+    assert ship_response.status_code == 201
+    ship_id = ship_response.json()["id"]
+
+    response = client.delete(f"/ships/{ship_id}/delete")
+
+    assert response.status_code == 204
+    assert client.get(f"/ships/{ship_id}/get").status_code == 404
+    assert client.get(f"/docks/{dock.id}/get").json()["dock_status"] == "active"
+    remaining_dockings = client.get("/dockings/list").json()
+    assert all(docking["ship_id"] != ship_id for docking in remaining_dockings)

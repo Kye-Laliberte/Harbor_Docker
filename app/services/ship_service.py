@@ -99,6 +99,28 @@ class shipService:
         """Delete a ship by id."""
         if self.ship is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
+
+        voyages = self.db.query(Voyage).filter(Voyage.ship_id == self.ship.id).first()
+        if voyages is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Delete the ship's voyages before deleting the ship",)
+
+        dockings = self.db.query(Docking).filter(Docking.ship_id == self.ship.id).all()
+        for docking in dockings:
+            if docking.departure_date is None:
+                dock = self.db.query(Dock).filter(Dock.id == docking.dock_id).first()
+                if dock is not None:
+                    active_docking = (
+                        self.db.query(Docking)
+                        .filter(Docking.dock_id == dock.id,
+                            Docking.ship_id != self.ship.id,
+                            Docking.departure_date.is_(None),).first()
+                    )
+                    if active_docking is None:
+                        dock.dock_status = DockStatus.ACTIVE
+            self.db.delete(docking)
+
         self.db.delete(self.ship)
         self.db.commit()
         return None
