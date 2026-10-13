@@ -15,89 +15,747 @@
       { "key": "in", "value": "header", "type": "string" }
     ]
   },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000" },
+    { "key": "api_key", "value": "secret_key" },
+    { "key": "origin_harbor_name", "value": "origin harbor" },
+    { "key": "destination_harbor_name", "value": "destination harbor" },
+    { "key": "origin_harbor_id", "value": "" },
+    { "key": "destination_harbor_id", "value": "" },
+    { "key": "origin_dock_id", "value": "" },
+    { "key": "destination_dock_id", "value": "" },
+    { "key": "origin_dock_code", "value": "" },
+    { "key": "destination_dock_code", "value": "" },
+    { "key": "ship_registration_number", "value": "" },
+    { "key": "ship_id", "value": "" },
+    { "key": "voyage_id", "value": "" },
+    { "key": "docking_id", "value": "" }
+  ],
   "item": [
     {
-      "name": "Rejects missing API key",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": { "raw": "{{base_url}}/", "host": ["{{base_url}}"], "path": [""] },
-        "auth": { "type": "noauth" }
-      },
-      "event": [
+      "name": "Authentication and startup checks",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('missing API key is rejected', function () {",
-              "    pm.response.to.have.status(401);",
-              "});"
-            ]
-          }
+          "name": "Reject request without API key",
+          "request": {"method": "GET","header": [],
+          "url": { "raw": "{{base_url}}/", "host": ["{{base_url}}"], "path": [""] },
+            "auth": { "type": "noauth" }},
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript",
+                "exec": [
+                  "pm.test('missing API key is rejected', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        { "name": "Check API health",
+          "request": {"method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/", "host": ["{{base_url}}"], "path": [""] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('health endpoint responds successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().message).to.eql('Harbor API');",
+                  "});"
+                ]
+              }}
+          ]
+        },
+        {
+          "name": "List ships",
+          "request": {"method": "GET",
+          "header": [],
+            "url": { "raw": "{{base_url}}/ships/list", "host": ["{{base_url}}"], "path": ["ships", "list"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('ships endpoint returns a list', function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.be.an('array');", "});"] } }]
+        },
+        {
+          "name": "List harbors",
+          "request": {"method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/harbors/home", "host": ["{{base_url}}"], "path": ["harbors", "home"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('harbors endpoint returns a list', function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.be.an('array');", "});"] } }]
+        },
+        {
+          "name": "List docks",
+          "request": {"method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/docks/getall", "host": ["{{base_url}}"], "path": ["docks", "getall"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('docks endpoint returns a list', function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.be.an('array');", "});"] } }]
+        },
+        {
+          "name": "List voyages",
+          "request": {"method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/voyages/getall", "host": ["{{base_url}}"], "path": ["voyages", "getall"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('voyages endpoint returns a list', function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.be.an('array');", "});"] } }]
         }
       ]
     },
     {
-      "name": "Health",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": { "raw": "{{base_url}}/", "host": ["{{base_url}}"], "path": [""] }
-      },
-
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('health endpoint responds successfully', function () {",
-              "    pm.response.to.have.status(200);",
-              "    pm.expect(pm.response.json().message).to.eql('Harbor API');",
-              "});"
+      "name": "Voyage lifecycle workflow",
+      "item": [
+        {"name": "Set up origin harbor",
+          "request": {"method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{origin_harbor_name}}\",\n  \"timezone\": \"UTC\",\n  \"latitude\": 10.0,\n  \"longitude\": 20.0\n}"
+            },
+            "url": { "raw": "{{base_url}}/harbors/new", "host": ["{{base_url}}"], "path": ["harbors", "new"] }
+          },
+          "event": [
+            {
+                "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "const runId = pm.variables.replaceIn('{{$guid}}');",
+                    "const dockCode = 100000000 + Math.floor(Math.random() * 1900000000);",
+                    "pm.collectionVariables.set('origin_harbor_name', 'postman origin ' + runId);",
+                    "pm.collectionVariables.set('destination_harbor_name', 'postman destination ' + runId);",
+                    "pm.collectionVariables.set('origin_dock_code', String(dockCode));",
+                    "pm.collectionVariables.set('destination_dock_code', String(dockCode + 1));",
+                    "pm.collectionVariables.set('ship_registration_number', 'postman-ship-' + runId);",
+                    "for (const key of ['origin_harbor_id', 'destination_harbor_id', 'origin_dock_id', 'destination_dock_id', 'ship_id', 'voyage_id', 'docking_id']) {",
+                    "  pm.collectionVariables.unset(key);",
+                    "}",
+                    "console.info('Starting voyage workflow run ' + runId);"
+                  ]
+                }
+              },
+              {
+                "listen": "test",
+                "script": {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('origin harbor is created', function () {",
+                    "    pm.response.to.have.status(201);",
+                    "    const json = pm.response.json();",
+                    "    pm.expect(json).to.have.property('id');",
+                    "    pm.collectionVariables.set('origin_harbor_id', String(json.id));",
+                    "});"
+                  ]
+                }
+              }
             ]
-          }
+        },
+        {
+          "name": "Set up destination harbor",
+          "request": {"method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {"mode": "raw",
+              "raw": "{\n  \"name\": \"{{destination_harbor_name}}\",\n  \"timezone\": \"UTC\",\n  \"latitude\": 30.0,\n  \"longitude\": 40.0\n}"
+            },
+            "url": { "raw": "{{base_url}}/harbors/new", "host": ["{{base_url}}"], "path": ["harbors", "new"] }
+          },
+          "event": [
+            {
+              "listen": "test","script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('destination harbor is created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.collectionVariables.set('destination_harbor_id', String(json.id));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Prepare origin dock",
+          "request": {"method": "POST","header": [
+              { "key": "Content-Type", "value": "application/json" }],
+            "body": {"mode": "raw",
+              "raw": "{\n  \"dock_code\": {{origin_dock_code}},\n  \"dock_status\": \"active\",\n  \"cargo_capacity\": 1000,\n  \"harbor_id\": {{origin_harbor_id}},\n  \"dock_size\": 1\n}"
+},
+            "url": { "raw": "{{base_url}}/docks/newDock", "host": ["{{base_url}}"], "path": ["docks", "newDock"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('origin dock is created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.collectionVariables.set('origin_dock_id', String(json.id));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Prepare destination dock",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dock_code\": {{destination_dock_code}},\n  \"dock_status\": \"active\",\n  \"cargo_capacity\": 1000,\n  \"harbor_id\": {{destination_harbor_id}},\n  \"dock_size\": 1\n}"
+            },
+            "url": { "raw": "{{base_url}}/docks/newDock", "host": ["{{base_url}}"], "path": ["docks", "newDock"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('destination dock is created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.collectionVariables.set('destination_dock_id', String(json.id));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Assign ship to origin dock",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ship_name\": \"postman voyage ship\",\n  \"current_cargo\": 1,\n  \"registration_number\": \"{{ship_registration_number}}\",\n  \"ship_status\": \"docked\",\n  \"cargo_capacity\": 500,\n  \"ship_size\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/ships/new?dock_id={{origin_dock_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["ships", "new"],
+              "query": [{ "key": "dock_id", "value": "{{origin_dock_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ship exists and is docked', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json.ship_status).to.eql('docked');",
+                  "    pm.collectionVariables.set('ship_id', String(json.id));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Schedule voyage",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ship_id\": {{ship_id}},\n  \"departure_date\": \"{{voyage_departure_date}}\",\n  \"destination_harbor_id\": {{destination_harbor_id}},\n  \"departure_harbor_id\": {{origin_harbor_id}}\n}"
+            },
+            "url": { "raw": "{{base_url}}/voyages/create", "host": ["{{base_url}}"], "path": ["voyages", "create"] }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('voyage_departure_date', new Date().toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('voyage is created and scheduled', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.travel_status).to.eql('scheduled');",
+                  "    pm.collectionVariables.set('voyage_id', String(json.id));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve scheduled voyage",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/voyages/{{voyage_id}}/approve", "host": ["{{base_url}}"], "path": ["voyages", "{{voyage_id}}", "approve"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('voyage is approved', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.travel_status).to.eql('approved');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Release ship and confirm departure",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/voyages/{{ship_id}}/leave_dock", "host": ["{{base_url}}"], "path": ["voyages", "{{ship_id}}", "leave_dock"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ship leaves origin dock and voyage departs', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.travel_status).to.eql('departed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify ship is sailing",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/ships/{{ship_id}}/get", "host": ["{{base_url}}"], "path": ["ships", "{{ship_id}}", "get"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ship is sailing after departure', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.ship_status).to.eql('sailing');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify origin dock is available again",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/docks/{{origin_dock_id}}/get", "host": ["{{base_url}}"], "path": ["docks", "{{origin_dock_id}}", "get"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('origin dock is active again after departure', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.dock_status).to.eql('active');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Record voyage arrival at destination",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"arrival_date\": \"{{voyage_actual_arrival}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/voyages/{{voyage_id}}/arrive", "host": ["{{base_url}}"], "path": ["voyages", "{{voyage_id}}", "arrive"] }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('voyage_actual_arrival', new Date().toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('voyage arrival is recorded', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.travel_status).to.eql('arrived');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create destination docking record",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ship_id\": {{ship_id}},\n  \"dock_id\": {{destination_dock_id}},\n  \"arrival_date\": \"{{voyage_actual_arrival}}\",\n  \"purpose\": \"postman voyage arrival docking\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/dockings/create", "host": ["{{base_url}}"], "path": ["dockings", "create"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('destination docking is created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.collectionVariables.set('docking_id', String(json.id));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve docking clearance",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/dockings/{{docking_id}}/approve", "host": ["{{base_url}}"], "path": ["dockings", "{{docking_id}}", "approve"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('docking is approved', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.ship_clearance_status).to.eql('approved');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirm ship has entered the dock",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": { "raw": "{{base_url}}/dockings/{{docking_id}}/arrive/", "host": ["{{base_url}}"], "path": ["dockings", "{{docking_id}}", "arrive", ""] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ship enters destination dock', function () {",
+                  "    pm.response.to.have.status(202);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('entered');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify destination dock is occupied",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/docks/{{destination_dock_id}}/get", "host": ["{{base_url}}"], "path": ["docks", "{{destination_dock_id}}", "get"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('destination dock is inactive while occupied', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.dock_status).to.eql('inactive');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify ship is docked at final destination",
+          "request": {"method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/ships/{{ship_id}}/get", "host": ["{{base_url}}"], "path": ["ships", "{{ship_id}}", "get"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ship is docked at destination', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.ship_status).to.eql('docked');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject deletion of active docking",
+          "request": {"method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/dockings/{{docking_id}}/delete", "host": ["{{base_url}}"], "path": ["dockings", "{{docking_id}}", "delete"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('delete is rejected while docking is active', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "console.log('Cleanup-step check: active docking block remains in effect.');"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
-
     {
-      "name": "Ships",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": { "raw": "{{base_url}}/ships/list", "host": ["{{base_url}}"], "path": ["ships", "list"] }
-      },
-      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('ships endpoint returns a list', function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.be.an('array');", "});"] } }]
-    },
-
-    {
-      "name": "Harbors",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": { "raw": "{{base_url}}/harbors/home", "host": ["{{base_url}}"], "path": ["harbors", "home"] }
-      },
-      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('harbors endpoint returns a list', function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.be.an('array');", "});"] } }]
-    },
-    {
-      "name": "Docks",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": { "raw": "{{base_url}}/docks/getall", "host": ["{{base_url}}"], "path": ["docks", "getall"] }
-      },
-      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('docks endpoint returns a list', function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.be.an('array');", "});"] } }]
-    },
-    {
-      "name": "Voyages",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": { "raw": "{{base_url}}/voyages/getall", "host": ["{{base_url}}"], "path": ["voyages", "getall"] }
-      },
-      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('voyages endpoint returns a list', function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.be.an('array');", "});"] } }]
+      "name": "Cleanup and reset",
+      "item": [
+        {
+          "name": "Delete docking record if present",
+          "request": {"method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/dockings/{{docking_id}}/delete", "host": ["{{base_url}}"], "path": ["dockings", "{{docking_id}}", "delete"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('docking_id')) {",
+                  "  pm.test.skip('no docking id to clean up');",
+                  "}",
+                  "pm.test('cleanup docking request is acceptable', function () {",
+                  "    pm.expect([200, 204, 400]).to.include(pm.response.code);",
+                  "});",
+                  "console.log('Cleanup: docking status code = ' + pm.response.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete voyage record if present",
+          "request": {"method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/voyages/{{voyage_id}}/delete", "host": ["{{base_url}}"], "path": ["voyages", "{{voyage_id}}", "delete"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('voyage_id')) {",
+                  "  pm.test.skip('no voyage id to clean up');",
+                  "}",
+                  "pm.test('cleanup voyage request is acceptable', function () {",
+                  "    pm.expect([200, 204, 400]).to.include(pm.response.code);",
+                  "});",
+                  "console.log('Cleanup: voyage status code = ' + pm.response.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete ship if present",
+          "request": {"method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/ships/{{ship_id}}/delete", "host": ["{{base_url}}"], "path": ["ships", "{{ship_id}}", "delete"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('ship_id')) {",
+                  "  pm.test.skip('no ship id to clean up');",
+                  "}",
+                  "pm.test('cleanup ship request is acceptable', function () {",
+                  "    pm.expect([200, 204, 400]).to.include(pm.response.code);",
+                  "});",
+                  "console.log('Cleanup: ship status code = ' + pm.response.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete destination dock if present",
+          "request": {"method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/docks/{{destination_dock_id}}/delete", "host": ["{{base_url}}"], "path": ["docks", "{{destination_dock_id}}", "delete"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('destination_dock_id')) {",
+                  "  pm.test.skip('no destination dock id to clean up');",
+                  "}",
+                  "pm.test('cleanup destination dock request is acceptable', function () {",
+                  "    pm.expect([200, 204, 400]).to.include(pm.response.code);",
+                  "});",
+                  "console.log('Cleanup: destination dock status code = ' + pm.response.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete origin dock if present",
+          "request": {"method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/docks/{{origin_dock_id}}/delete", "host": ["{{base_url}}"], "path": ["docks", "{{origin_dock_id}}", "delete"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('origin_dock_id')) {",
+                  "  pm.test.skip('no origin dock id to clean up');",
+                  "}",
+                  "pm.test('cleanup origin dock request is acceptable', function () {",
+                  "    pm.expect([200, 204, 400]).to.include(pm.response.code);",
+                  "});",
+                  "console.log('Cleanup: origin dock status code = ' + pm.response.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete destination harbor if present",
+          "request": {"method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/harbors/{{destination_harbor_id}}/delete", "host": ["{{base_url}}"], "path": ["harbors", "{{destination_harbor_id}}", "delete"] }
+          },
+          "event": [
+            {"listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('destination_harbor_id')) {",
+                  "  pm.test.skip('no destination harbor id to clean up');",
+                  "}",
+                  "pm.test('cleanup destination harbor request is acceptable', function () {",
+                  "    pm.expect([200, 204, 400]).to.include(pm.response.code);",
+                  "});",
+                  "console.log('Cleanup: destination harbor status code = ' + pm.response.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete origin harbor if present",
+          "request": {"method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/harbors/{{origin_harbor_id}}/delete", "host": ["{{base_url}}"], "path": ["harbors", "{{origin_harbor_id}}", "delete"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('origin_harbor_id')) {",
+                  "  pm.test.skip('no origin harbor id to clean up');",
+                  "}",
+                  "pm.test('cleanup origin harbor request is acceptable', function () {",
+                  "    pm.expect([200, 204, 400]).to.include(pm.response.code);",
+                  "});",
+                  "console.log('Cleanup: origin harbor status code = ' + pm.response.code);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }
