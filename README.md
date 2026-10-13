@@ -235,6 +235,14 @@ For the automated Newman run, use the same selected collection via the repositor
 .\scripts\test-api.ps1
 ```
 
+To check the running database connection and make an authenticated API request using `API_KEY` from `.env`, run:
+
+```powershell
+.\scripts\conecton_health.ps1
+```
+
+This health check does not print or copy the API key. Start the stack first with `docker compose up -d api`. For the Postman desktop app, enter the local `.env` API key into the **Harbor Local** environment's secret `api_key` variable; the exported environment intentionally does not contain a key.
+
 The script builds and starts the API and database, applies Alembic migrations, and runs the collection in a disposable Newman container. Inside Docker Compose, Newman connects to `http://api:8000` using the Compose service name; it must not use `localhost`, which would point back to the Newman container itself. Compose passes Newman only `API_KEY` from `.env` and the internal base URL; database credentials are not passed to the test container. No Postman environment export or separately configured `POSTMAN_BASE_URL` is needed. Neither the workflow nor the collection calls prediction or model-training endpoints.
 
 ## ⚙️ Business Rules & Constraints
