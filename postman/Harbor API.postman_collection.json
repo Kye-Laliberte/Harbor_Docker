@@ -61,8 +61,7 @@
           "event": [
             {
               "listen": "test",
-              "script": {
-                "type": "text/javascript",
+              "script": {"type": "text/javascript",
                 "exec": [
                   "pm.test('health endpoint responds successfully', function () {",
                   "    pm.response.to.have.status(200);",
@@ -78,7 +77,8 @@
           "header": [],
             "url": { "raw": "{{base_url}}/ships/list", "host": ["{{base_url}}"], "path": ["ships", "list"] }
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('ships endpoint returns a list', function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.be.an('array');", "});"] } }]
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", 
+          "exec": ["pm.test('ships endpoint returns a list', function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.be.an('array');", "});"] } }]
         },
         {
           "name": "List harbors",
@@ -168,8 +168,7 @@
             "url": { "raw": "{{base_url}}/harbors/new", "host": ["{{base_url}}"], "path": ["harbors", "new"] }
           },
           "event": [
-            {
-              "listen": "test","script": {
+            {"listen": "test","script": {
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('destination harbor is created', function () {",
@@ -195,8 +194,7 @@
           "event": [
             {
               "listen": "test",
-              "script": {
-                "type": "text/javascript",
+              "script": {"type": "text/javascript",
                 "exec": [
                   "pm.test('origin dock is created', function () {",
                   "    pm.response.to.have.status(201);",
@@ -211,8 +209,7 @@
         },
         {
           "name": "Prepare destination dock",
-          "request": {
-            "method": "POST",
+          "request": {"method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" }
             ],
@@ -225,8 +222,7 @@
           "event": [
             {
               "listen": "test",
-              "script": {
-                "type": "text/javascript",
+              "script": {"type": "text/javascript",
                 "exec": [
                   "pm.test('destination dock is created', function () {",
                   "    pm.response.to.have.status(201);",
@@ -241,8 +237,7 @@
         },
         {
           "name": "Assign ship to origin dock",
-          "request": {
-            "method": "POST",
+          "request": {"method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" }
             ],
@@ -260,8 +255,7 @@
           "event": [
             {
               "listen": "test",
-              "script": {
-                "type": "text/javascript",
+              "script": {"type": "text/javascript",
                 "exec": [
                   "pm.test('ship exists and is docked', function () {",
                   "    pm.response.to.have.status(201);",
@@ -291,8 +285,7 @@
           "event": [
             {
               "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
+              "script": {"type": "text/javascript",
                 "exec": [
                   "pm.collectionVariables.set('voyage_departure_date', new Date().toISOString());"
                 ]
@@ -300,8 +293,7 @@
             },
             {
               "listen": "test",
-              "script": {
-                "type": "text/javascript",
+              "script": {"type": "text/javascript",
                 "exec": [
                   "pm.test('voyage is created and scheduled', function () {",
                   "    pm.response.to.have.status(201);",
@@ -316,16 +308,14 @@
         },
         {
           "name": "Approve scheduled voyage",
-          "request": {
-            "method": "POST",
+          "request": {"method": "POST",
             "header": [],
             "url": { "raw": "{{base_url}}/voyages/{{voyage_id}}/approve", "host": ["{{base_url}}"], "path": ["voyages", "{{voyage_id}}", "approve"] }
           },
           "event": [
             {
               "listen": "test",
-              "script": {
-                "type": "text/javascript",
+              "script": {"type": "text/javascript",
                 "exec": [
                   "pm.test('voyage is approved', function () {",
                   "    pm.response.to.have.status(200);",
@@ -339,8 +329,7 @@
         },
         {
           "name": "Release ship and confirm departure",
-          "request": {
-            "method": "POST",
+          "request": {"method": "POST",
             "header": [],
             "url": { "raw": "{{base_url}}/voyages/{{ship_id}}/leave_dock", "host": ["{{base_url}}"], "path": ["voyages", "{{ship_id}}", "leave_dock"] }
           },
@@ -476,8 +465,7 @@
         },
         {
           "name": "Approve docking clearance",
-          "request": {
-            "method": "POST",
+          "request": {"method": "POST",
             "header": [],
             "url": { "raw": "{{base_url}}/dockings/{{docking_id}}/approve", "host": ["{{base_url}}"], "path": ["dockings", "{{docking_id}}", "approve"] }
           },
