@@ -4,8 +4,6 @@ services:
     container_name: harbor-postgres
     restart: unless-stopped
 
-    env_file: .env 
-    
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD:  ${POSTGRES_PASSWORD}
@@ -29,7 +27,6 @@ services:
     build: .
     container_name: harbor-api
     restart: unless-stopped
-    env_file: .env
     ports:
       - "8000:8000"
     healthcheck:
@@ -42,9 +39,15 @@ services:
       timeout: 4s
       retries: 12
       start_period: 10s
+
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       API_KEY: ${API_KEY}
+
+    volumes:
+      - ./app:/app/app
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,11 +56,9 @@ services:
     image: postman/newman:alpine
     profiles: [test]
     restart: "no"
-    env_file: .env
-    
     environment:
       API_KEY: ${API_KEY}
-      BASE_URL: ${POSTMAN_BASE_URL}
+      BASE_URL: http://api:8000
     volumes:
       - "./postman/Harbor API.postman_collection.json:/etc/newman/collection.json:ro"
       - ./postman/run-newman.sh:/etc/newman/run-newman.sh:ro
@@ -66,7 +67,7 @@ services:
     depends_on:
       api:
         condition: service_healthy
-    
+
     healthcheck:
       test: ["CMD-SHELL", "exit 0"]
       interval: 2s

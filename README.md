@@ -235,7 +235,7 @@ For the automated Newman run, use the same selected collection via the repositor
 .\scripts\test-api.ps1
 ```
 
-The script builds and starts the API and database, applies Alembic migrations, and runs the collection in a disposable Newman container. Inside Docker Compose, Newman connects to `http://api:8000` using the Compose service name; it must not use `localhost`, which would point back to the Newman container itself. Newman gets `API_KEY` from `.env`, so no Postman environment export or separately configured `POSTMAN_BASE_URL` is needed. Neither the workflow nor the collection calls prediction or model-training endpoints.
+The script builds and starts the API and database, applies Alembic migrations, and runs the collection in a disposable Newman container. Inside Docker Compose, Newman connects to `http://api:8000` using the Compose service name; it must not use `localhost`, which would point back to the Newman container itself. Compose passes Newman only `API_KEY` from `.env` and the internal base URL; database credentials are not passed to the test container. No Postman environment export or separately configured `POSTMAN_BASE_URL` is needed. Neither the workflow nor the collection calls prediction or model-training endpoints.
 
 ## ⚙️ Business Rules & Constraints
 
