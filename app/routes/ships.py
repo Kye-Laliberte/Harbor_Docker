@@ -9,7 +9,7 @@ from fastapi import HTTPException
 router = APIRouter(prefix="/ships", tags=["ships"])
 
 
-@router.get("/list", response_model=list[ShipRead])
+@router.get("/list", response_model=list[ShipRead], status_code=status.HTTP_200_OK)
 def list_ships(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """List ships with optional pagination."""
     return sev_list_ships(db=db, skip=skip, limit=limit)
@@ -20,13 +20,13 @@ def add_ship(payload: ShipCreate, dock_id: int | None = None, db: Session = Depe
     """Create a ship from the given payload."""
     return shipService(db=db,ship_id=None).create_ship( payload, dock_id=dock_id)
 
-@router.get("/{ship_id}/get", response_model=ShipRead)
+@router.get("/{ship_id}/get", response_model=ShipRead, status_code=status.HTTP_200_OK)
 def get_ship(ship_id: int, db: Session = Depends(get_db)):
     """Retrieve a ship by its id."""
     return shipService(db,ship_id).ship
 
 
-@router.put("/{ship_id}/update", response_model=ShipRead)
+@router.put("/{ship_id}/update", response_model=ShipRead, status_code=status.HTTP_200_OK)
 def update_ship(ship_id: int, payload: ShipUpdate, db: Session = Depends(get_db)):
     """Update a ship using the provided fields."""
     shipsev=shipService(db,ship_id)
@@ -41,7 +41,7 @@ def update_ship(ship_id: int, payload: ShipUpdate, db: Session = Depends(get_db)
     return shipsev.sev_update_ship(payload)
 
 
-@router.delete("/{ship_id}/delete", status_code=status.HTTP_204_NO_CONTENT)# need to swith ship and dock to soft deleat 
+@router.delete("/{ship_id}/delete", status_code=status.HTTP_200_OK)# need to swith ship and dock to soft deleat 
 def delete_ship(ship_id: int, db: Session = Depends(get_db)):
     """Delete a ship by its id."""
     shipsev=shipService(db=db, ship_id=ship_id)

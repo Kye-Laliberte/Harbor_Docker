@@ -37,7 +37,7 @@ def get_docking(docking_id: int, db: Session = Depends(get_db)):
     return DockingService(db,docking_id).docking
 
 
-@router.delete("/{docking_id}/delete", status_code=status.HTTP_204_NO_CONTENT)# dont use unless for cansalaton of a docking 
+@router.delete("/{docking_id}/delete", status_code=status.HTTP_200_OK)# dont use unless for cansalaton of a docking 
 def delete_docking(docking_id: int, db: Session = Depends(get_db)):
     """Delete a docking by id."""
     dockingsev = DockingService(db,docking_id)

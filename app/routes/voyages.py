@@ -10,7 +10,7 @@ import app.enums as enums
 router = APIRouter(prefix="/voyages", tags=["voyages"])
 
 
-@router.get("/getall", response_model=list[VoyageRead])
+@router.get("/getall", response_model=list[VoyageRead], status_code=status.HTTP_200_OK)
 def list_voyages(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """List voyages with optional pagination."""
     return VoyageService(db=db, v_id=None).list_voyages(skip=skip, limit=limit)
@@ -22,7 +22,7 @@ def create_voyage(payload: VoyageCreate, db: Session = Depends(get_db)):
     voyage = VoyageService(db=db, v_id=None).create_voyage(payload)
     return voyage
 
-@router.get("/predict", response_model=VoyagePrediction)
+@router.get("/predict", response_model=VoyagePrediction, status_code=status.HTTP_200_OK)
 def predict_voyage(ship_id: int,departure_harbor_id: int,destination_harbor_id: int,db: Session = Depends(get_db),):
     """Predict ship speed and average voyage time from completed voyages."""
 
@@ -38,7 +38,7 @@ def predict_voyage(ship_id: int,departure_harbor_id: int,destination_harbor_id: 
 
     return predict_voyage_metrics(db, ship, origin, destination)
 
-@router.get("/{voyage_id}/get", response_model=VoyageRead)
+@router.get("/{voyage_id}/get", response_model=VoyageRead, status_code=status.HTTP_200_OK)
 def get_voyage(voyage_id: int, db: Session = Depends(get_db)):
     """Retrieve a voyage by id."""
     return VoyageService(db=db,v_id=voyage_id).get_voyage(voyage_id)
@@ -87,6 +87,6 @@ def delete_voyage(voyage_id: int, db: Session = Depends(get_db)):
     voy.delete_voyage(voyage_id)
     return None
 
-@router.post("/trane")
+@router.post("/trane", status_code=status.HTTP_200_OK)
 def trane_data(db:Session =Depends(get_db)):
     training_sample_count(db=db)

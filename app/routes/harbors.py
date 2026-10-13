@@ -11,7 +11,7 @@ from app.services.harbor_service import HarborService, HarborOperations
 router = APIRouter(prefix="/harbors", tags=["harbors"])
 
 
-@router.get("/home", response_model=list[HarborRead])
+@router.get("/home", response_model=list[HarborRead], status_code=status.HTTP_200_OK)
 def list_harbors(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """List all harbors with optional pagination."""
     return HarborService(db).all_harbors(skip=skip, limit=limit)
