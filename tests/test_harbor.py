@@ -1,49 +1,12 @@
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from app.main import app
-from test_helpers import authenticated_client, create_sample_harbor, create_sample_dock
-from app.dependencies import get_db
-from app.models import Base, Harbor, Dock
+from test_helpers import create_sample_harbor, create_sample_dock
 import app.enums as enums
-
-
-# -------------------------------------------------------------------
-# PostgreSQL Test Database Setup
-# -------------------------------------------------------------------
-
-# IMPORTANT:
-# This database MUST exist before running tests.
-# Your docker-compose should create it automatically.
-TEST_DB_URL = "sqlite:///./test.db"
-
-engine = create_engine(TEST_DB_URL,connect_args={"check_same_thread": False},)
-
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Create tables fresh for each test session
-Base.metadata.drop_all(bind=engine)
-Base.metadata.create_all(bind=engine)
-
-
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-app.dependency_overrides[get_db] = override_get_db
-
-client = authenticated_client(app)
 
 
 # -------------------------------------------------------------------
 # Tests
 # -------------------------------------------------------------------
 
-def test_create_harbor():
+def test_create_harbor(client):
     payload = {
         "name": "New Harbor",
         "timezone": "UTC",
@@ -56,14 +19,13 @@ def test_create_harbor():
     assert response.json()["name"] == "new harbor"
 
 
-def test_list_harbors():
+def test_list_harbors(client):
     response = client.get("/harbors/home")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
 
-def test_get_harbor():
-    db = TestingSessionLocal()
+def test_get_harbor(client, db):
     harbor = create_sample_harbor(db)
 
     response = client.get(f"/harbors/{harbor.id}/get")
@@ -71,16 +33,14 @@ def test_get_harbor():
     assert response.json()["id"] == harbor.id
 
 
-def test_delete_harbor():
-    db = TestingSessionLocal()
+def test_delete_harbor(client, db):
     harbor = create_sample_harbor(db)
 
-    response = client.delete(f"/harbors/{harbor.id}")
+    response = client.delete(f"/harbors/{harbor.id}/delete")
     assert response.status_code == 204
 
 
-def test_get_active_docks():
-    db = TestingSessionLocal()
+def test_get_active_docks(client, db):
     harbor = create_sample_harbor(db)
     create_sample_dock(db, harbor.id)
 
@@ -90,16 +50,14 @@ def test_get_active_docks():
     assert len(response.json()) == 1
 
 
-def test_get_active_docks_not_found():
-    db = TestingSessionLocal()
+def test_get_active_docks_not_found(client, db):
     harbor = create_sample_harbor(db)
 
     response = client.get(f"/harbors/{harbor.id}/active_docks")
     assert response.status_code == 404
 
 
-def test_get_docks_above_size():
-    db = TestingSessionLocal()
+def test_get_docks_above_size(client, db):
     harbor = create_sample_harbor(db)
 
     create_sample_dock(db, harbor.id, size=enums.VesselSize.LARGE)
@@ -109,8 +67,7 @@ def test_get_docks_above_size():
     assert len(response.json()) == 1
 
 
-def test_get_docks_above_size_invalid_enum():
-    db = TestingSessionLocal()
+def test_get_docks_above_size_invalid_enum(client, db):
     harbor = create_sample_harbor(db)
 
     response = client.get(f"/harbors/{harbor.id}/docks_above_size/INVALID")

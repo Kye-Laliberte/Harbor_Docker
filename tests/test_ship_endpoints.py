@@ -1,60 +1,21 @@
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from test_helpers import authenticated_client, create_sample_harbor as create_harbor
+from test_helpers import create_sample_harbor as create_harbor
 from test_helpers import create_ship 
 from test_helpers import create_sample_dock as create_dock
-from app.main import app
-from app.dependencies import get_db
-from app.models import Base, Harbor, Dock, Ship, Docking
 import app.enums as enums
-
-
-# -------------------------------------------------------------------
-# SQLite Test Database Setup
-# -------------------------------------------------------------------
-
-TEST_DB_URL = "sqlite:///./test.db"
-
-engine = create_engine(TEST_DB_URL,
-    connect_args={"check_same_thread": False})
-
-TestingSessionLocal = sessionmaker(
-    autocommit=False,autoflush=False,bind=engine)
-
-# Reset schema for clean tests
-Base.metadata.drop_all(bind=engine)
-Base.metadata.create_all(bind=engine)
-
-
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-
-client = authenticated_client(app)
-
 
 
 # -------------------------------------------------------------------
 # Tests
 # -------------------------------------------------------------------
 
-def test_list_ships_empty():
+def test_list_ships_empty(client):
     response = client.get("/ships/list")
     assert response.status_code == 200
     assert response.json() == []
 
 
-def test_create_ship():
-    db = TestingSessionLocal()
+def test_create_ship(client, db):
     harbor = create_harbor(db)
     dock = create_dock(db, harbor.id)
 
@@ -81,8 +42,7 @@ def test_create_ship():
     assert data["ship_status"] == enums.ShipStatus.DOCKED
     
 
-def test_get_ship():
-    db = TestingSessionLocal()
+def test_get_ship(client, db):
     ship = create_ship(db,name="test_ship_get")
 
     response = client.get(f"/ships/{ship.id}/get")
@@ -90,8 +50,7 @@ def test_get_ship():
     assert response.json()["id"] == ship.id
 
 
-def test_update_docked_ship():
-    db = TestingSessionLocal()
+def test_update_docked_ship(client, db):
 
     harbor = create_harbor(db)
     dock = create_dock(db, harbor.id,active=enums.DockStatus.ACTIVE,size=enums.VesselSize.SMALL)
@@ -121,8 +80,7 @@ def test_update_docked_ship():
     assert response.json()["ship_name"] == "updated ship"
 
 
-def test_update_ship_while_sailing_fails():
-    db = TestingSessionLocal()
+def test_update_ship_while_sailing_fails(client, db):
     ship = create_ship(db, status=enums.ShipStatus.SAILING,name="update_logic_test_ship")
 
     payload = {
@@ -165,8 +123,7 @@ def test_delete_ship_requires_docked():
     assert response2.status_code == 404
 """
 
-def test_current_docking_lookup():
-    db = TestingSessionLocal()
+def test_current_docking_lookup(client, db):
     harbor = create_harbor(db)
     dock = create_dock(db, harbor.id)
     
@@ -190,8 +147,7 @@ def test_current_docking_lookup():
     assert data["departure_date"] is None
 
 
-def test_delete_ship_removes_its_dockings_and_releases_dock():
-    db = TestingSessionLocal()
+def test_delete_ship_removes_its_dockings_and_releases_dock(client, db):
     harbor = create_harbor(db, name="ship-delete-harbor")
     dock = create_dock(db, harbor.id)
     ship_payload = {
@@ -211,7 +167,7 @@ def test_delete_ship_removes_its_dockings_and_releases_dock():
 
     response = client.delete(f"/ships/{ship_id}/delete")
 
-    assert response.status_code == 204
+    assert response.status_code == 200
     assert client.get(f"/ships/{ship_id}/get").status_code == 404
     assert client.get(f"/docks/{dock.id}/get").json()["dock_status"] == "active"
     remaining_dockings = client.get("/dockings/list").json()

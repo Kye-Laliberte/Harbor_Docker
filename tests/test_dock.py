@@ -1,57 +1,18 @@
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from test_helpers import authenticated_client, create_sample_harbor, create_sample_dock
-from app.main import app
-from app.dependencies import get_db
-from app.models import Base, Harbor, Dock
+from test_helpers import create_sample_harbor, create_sample_dock
 import app.enums as enums
-
-
-# -------------------------------------------------------------------
-# SQLite Test Database Setup
-# -------------------------------------------------------------------
-
-TEST_DB_URL = "sqlite:///./test.db"
-
-engine = create_engine(TEST_DB_URL,
-    connect_args={"check_same_thread": False})
-
-TestingSessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine)
-
-# Reset schema for clean tests
-Base.metadata.drop_all(bind=engine)
-Base.metadata.create_all(bind=engine)
-
-
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-app.dependency_overrides[get_db] = override_get_db
-
-client = authenticated_client(app)
 
 
 # -------------------------------------------------------------------
 # Tests
 # -------------------------------------------------------------------
 
-def test_list_docks_empty():
+def test_list_docks_empty(client):
     response = client.get("/docks/getall")
     assert response.status_code == 200
     assert response.json() == []
 
 
-def test_create_dock():
-    db = TestingSessionLocal()
+def test_create_dock(client, db):
     harbor = create_sample_harbor(db)
 
     payload = {
@@ -71,8 +32,7 @@ def test_create_dock():
     assert data["dock_size"] == 2
 
 
-def test_get_dock():
-    db = TestingSessionLocal()
+def test_get_dock(client, db):
     harbor = create_sample_harbor(db)
     dock = create_sample_dock(db, harbor.id)
 
@@ -81,8 +41,7 @@ def test_get_dock():
     assert response.json()["id"] == dock.id
 
 
-def test_update_dock():
-    db = TestingSessionLocal()
+def test_update_dock(client, db):
     harbor = create_sample_harbor(db)
     dock = create_sample_dock(db, harbor.id)
 
@@ -101,8 +60,7 @@ def test_update_dock():
     assert data["cargo_capacity"] == 2000.0
 
 
-def test_delete_dock():
-    db = TestingSessionLocal()
+def test_delete_dock(client, db):
     harbor = create_sample_harbor(db)
     dock = create_sample_dock(db, harbor.id)
 
