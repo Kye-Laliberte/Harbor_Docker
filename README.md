@@ -361,25 +361,25 @@ alembic downgrade -1
 alembic downgrade <revision_id>
 ```
 
-## 🧪 Testing not yet added.
+## 🧪 Pytest
 
-Test suite is located in `tests/` directory:
+The harbor, dock, and ship endpoint tests use PostgreSQL. Configure
+`TEST_DATABASE_URL` to point to a dedicated test database whose database name
+differs from the application's `DATABASE_URL`. The application `DATABASE_URL`
+must also be configured as usual. The test fixture rolls back each test's
+transaction and rolls back its temporary schema at the end of the pytest
+session, leaving no test rows or tables behind. The test database must not
+already contain the application's tables.
 
-```bash
-# Run all tests
-pytest tests/ -v
+In PowerShell, for example:
 
-# Run specific test file
-pytest tests/test_endpoints.py -v
-
-# Run with coverage
-pytest tests/ --cov=app --cov-report=html
+```powershell
+$env:TEST_DATABASE_URL = "postgresql+psycopg2://<user>:<password>@localhost:5432/harbor_test"
+pytest tests/test_harbor.py tests/test_dock.py tests/test_ship_endpoints.py -v
 ```
 
-### Test Files not yet set up
-- `test_endpoints.py`: API endpoint integration tests
-- `test_docking_voyage_flow.py`: Complex workflow scenarios
-- `test_voyage_service.py`: Service-level business logic tests
+Run the tests from the repository root. The test setup refuses SQLite URLs and
+refuses to use the application's configured database.
 
 ## 📝 Configuration
 
@@ -388,7 +388,7 @@ pytest tests/ --cov=app --cov-report=html
 DATABASE_URL          # PostgreSQL connection string
                       # Format: postgresql://user:password@host:port/database
 API_KEY               # API key checked in the X-API-Key request header
-SQLALCHEMY_ECHO       # Enable SQL logging (default: True)
+SQLALCHEMY_ECHO       # Enable SQL logging (default: False)
 ```
 
 ### Example .env File
