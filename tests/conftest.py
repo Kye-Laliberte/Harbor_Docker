@@ -1,14 +1,13 @@
 import os
-
 import pytest
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
-
 from app.core.config import settings
 from app.dependencies import get_db
+from app.enums import DockStatus, VesselSize
 from app.main import app
-from app.models import Base
+from app.models import Base, Dock, Harbor
 from test_helpers import authenticated_client
 
 
@@ -88,3 +87,48 @@ def client(db):
             app.dependency_overrides.pop(get_db, None)
         else:
             app.dependency_overrides[get_db] = previous_override
+
+@pytest.fixture
+def make_harbor(db):
+    def factory(harbor_name="test_harbor", tz="UTC", lat=33.0, lon=-96.0):
+        harbor = Harbor(name=harbor_name,
+                        timezone=tz,latitude=lat,
+                        longitude=lon,)
+        db.add(harbor)
+        db.commit()
+        db.refresh(harbor)
+        return harbor
+
+    return factory
+
+
+@pytest.fixture
+def make_harbor_with_dock(db, make_harbor):
+    def factory(
+        harbor_name="test_harbor",
+        tz="UTC",
+        lat=33.0,
+        lon=-96.0,
+        dock_status=DockStatus.ACTIVE,
+        dock_size=VesselSize.SMALL,
+        cargo_capacity=1000.0,
+    ):
+        harbor = make_harbor(
+            harbor_name=harbor_name,
+            tz=tz,
+            lat=lat,
+            lon=lon,
+        )
+        dock = Dock(
+            dock_code=harbor.id * 100,
+            harbor_id=harbor.id,
+            dock_status=dock_status,
+            dock_size=int(dock_size),
+            cargo_capacity=cargo_capacity,
+        )
+        db.add(dock)
+        db.commit()
+        db.refresh(dock)
+        return harbor, dock
+
+    return factory
