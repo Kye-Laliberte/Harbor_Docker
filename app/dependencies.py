@@ -1,12 +1,18 @@
-from app.database import SessionLocal
 import logging
-def get_db():
+from collections.abc import Generator
+from sqlalchemy.orm import Session
+from app.database import SessionLocal
+
+
+logger = logging.getLogger(__name__)
+
+def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db
-    except Exception as e:
+    except Exception:
         db.rollback()
-        logging.error(f"Error: {e}")
+        logger.exception("Database request failed")
         raise
     finally:
         db.close()
