@@ -1,7 +1,4 @@
-
-from test_helpers import create_sample_harbor as create_harbor
-from test_helpers import create_ship 
-from test_helpers import create_sample_dock as create_dock
+from test_helpers import create_ship
 import app.enums as enums
 
 
@@ -15,13 +12,15 @@ def test_list_ships_empty(client):
     assert response.json() == []
 
 
-def test_create_ship(client, db):
-    harbor = create_harbor(db)
-    dock = create_dock(db, harbor.id)
+def test_create_ship(client, make_harbor_with_dock):
+    harbor, dock = make_harbor_with_dock(
+        dock_size=enums.VesselSize.SMALL,
+        cargo_capacity=1000.0,
+    )
 
     payload = {
         "ship_name": "New Ship",
-        "current_cargo": 0,
+        "current_cargo": 750,
         "registration_number": "1234",
         "ship_status": enums.ShipStatus.DOCKED,
         "cargo_capacity":1000,
@@ -40,6 +39,7 @@ def test_create_ship(client, db):
 
     assert data["ship_name"] == "new ship"
     assert data["ship_status"] == enums.ShipStatus.DOCKED
+    assert data["current_cargo"] == 750
     
 
 def test_get_ship(client, db):
@@ -50,10 +50,10 @@ def test_get_ship(client, db):
     assert response.json()["id"] == ship.id
 
 
-def test_update_docked_ship(client, db):
-
-    harbor = create_harbor(db)
-    dock = create_dock(db, harbor.id,active=enums.DockStatus.ACTIVE,size=enums.VesselSize.SMALL)
+def test_update_docked_ship(client, make_harbor_with_dock):
+    _, dock = make_harbor_with_dock(
+        dock_size=enums.VesselSize.SMALL,
+        cargo_capacity=1000.0,)
     
     ship_payload = {
         "ship_name": "test Ship",
@@ -123,9 +123,11 @@ def test_delete_ship_requires_docked():
     assert response2.status_code == 404
 """
 
-def test_current_docking_lookup(client, db):
-    harbor = create_harbor(db)
-    dock = create_dock(db, harbor.id)
+def test_current_docking_lookup(client, make_harbor_with_dock):
+    _, dock = make_harbor_with_dock(
+        dock_size=enums.VesselSize.SMALL,
+        cargo_capacity=1000.0,
+    )
     
     ship_payload = {
             "ship_name": "old Ship",
@@ -147,9 +149,15 @@ def test_current_docking_lookup(client, db):
     assert data["departure_date"] is None
 
 
-def test_delete_ship_removes_its_dockings_and_releases_dock(client, db):
-    harbor = create_harbor(db, name="ship-delete-harbor")
-    dock = create_dock(db, harbor.id)
+def test_delete_ship_removes_its_dockings_and_releases_dock(
+    client,
+    make_harbor_with_dock,
+):
+    _, dock = make_harbor_with_dock(
+        harbor_name="ship-delete-harbor",
+        dock_size=enums.VesselSize.SMALL,
+        cargo_capacity=1000.0,
+    )
     ship_payload = {
         "ship_name": "ship for delete test",
         "current_cargo": 0,

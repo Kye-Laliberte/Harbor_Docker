@@ -1,4 +1,3 @@
-from test_helpers import create_sample_harbor, create_sample_dock
 import app.enums as enums
 
 
@@ -12,9 +11,8 @@ def test_list_docks_empty(client):
     assert response.json() == []
 
 
-def test_create_dock(client, db):
-    harbor = create_sample_harbor(db)
-
+def test_create_dock(client, make_harbor):
+    harbor = make_harbor()
     payload = {
         "dock_code": harbor.id * 100,
         "harbor_id": harbor.id,
@@ -32,18 +30,16 @@ def test_create_dock(client, db):
     assert data["dock_size"] == 2
 
 
-def test_get_dock(client, db):
-    harbor = create_sample_harbor(db)
-    dock = create_sample_dock(db, harbor.id)
+def test_get_dock(client, make_harbor_with_dock):
+    _, dock = make_harbor_with_dock()
 
     response = client.get(f"/docks/{dock.id}/get")
     assert response.status_code == 200
     assert response.json()["id"] == dock.id
 
 
-def test_update_dock(client, db):
-    harbor = create_sample_harbor(db)
-    dock = create_sample_dock(db, harbor.id)
+def test_update_dock(client, make_harbor_with_dock):
+    _, dock = make_harbor_with_dock()
 
     payload = {
         "dock_status": enums.DockStatus.INACTIVE,
@@ -60,9 +56,8 @@ def test_update_dock(client, db):
     assert data["cargo_capacity"] == 2000.0
 
 
-def test_delete_dock(client, db):
-    harbor = create_sample_harbor(db)
-    dock = create_sample_dock(db, harbor.id)
+def test_delete_dock(client,db, make_harbor_with_dock):
+    harbor, dock = make_harbor_with_dock()
 
     response = client.delete(f"/docks/{dock.id}/delete")
     assert response.status_code == 204

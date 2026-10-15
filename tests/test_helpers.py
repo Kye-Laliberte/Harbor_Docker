@@ -12,17 +12,6 @@ def authenticated_client(app):
     return TestClient(app, headers={"X-API-Key": settings.API_KEY})
 
 
-def create_sample_harbor(db, name="Test Harbor",lat=10.0, long =20.0):
-    harbor = Harbor(
-        name=name,
-        timezone="UTC",
-        latitude=lat,
-        longitude=long)
-    
-    db.add(harbor)
-    db.commit()
-    db.refresh(harbor)
-    return harbor
 
 def create_sample_dock(db, harbor_id,size=enums.VesselSize.SMALL, active=enums.DockStatus.ACTIVE):
     dock = Dock(
