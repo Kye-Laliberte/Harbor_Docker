@@ -270,13 +270,11 @@
         },
         {
           "name": "Schedule voyage",
-          "request": {
-            "method": "POST",
+          "request": {"method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "body": {
-              "mode": "raw",
+            "body": {"mode": "raw",
               "raw": "{\n  \"ship_id\": {{ship_id}},\n  \"departure_date\": \"{{voyage_departure_date}}\",\n  \"destination_harbor_id\": {{destination_harbor_id}},\n  \"departure_harbor_id\": {{origin_harbor_id}}\n}"
             },
             "url": { "raw": "{{base_url}}/voyages/create", "host": ["{{base_url}}"], "path": ["voyages", "create"] }
@@ -333,8 +331,7 @@
             "url": { "raw": "{{base_url}}/voyages/{{ship_id}}/leave_dock", "host": ["{{base_url}}"], "path": ["voyages", "{{ship_id}}", "leave_dock"] }
           },
           "event": [
-            {
-              "listen": "test",
+            {"listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
@@ -350,16 +347,13 @@
         },
         {
           "name": "Verify ship is sailing",
-          "request": {
-            "method": "GET",
+          "request": {"method": "GET",
             "header": [],
             "url": { "raw": "{{base_url}}/ships/{{ship_id}}/get", "host": ["{{base_url}}"], "path": ["ships", "{{ship_id}}", "get"] }
           },
           "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
+            {"listen": "test",
+              "script": {"type": "text/javascript",
                 "exec": [
                   "pm.test('ship is sailing after departure', function () {",
                   "    pm.response.to.have.status(200);",
@@ -373,16 +367,13 @@
         },
         {
           "name": "Verify origin dock is available again",
-          "request": {
-            "method": "GET",
+          "request": {"method": "GET",
             "header": [],
             "url": { "raw": "{{base_url}}/docks/{{origin_dock_id}}/get", "host": ["{{base_url}}"], "path": ["docks", "{{origin_dock_id}}", "get"] }
           },
           "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
+            {"listen": "test",
+              "script": {"type": "text/javascript",
                 "exec": [
                   "pm.test('origin dock is active again after departure', function () {",
                   "    pm.response.to.have.status(200);",
@@ -396,13 +387,11 @@
         },
         {
           "name": "Record voyage arrival at destination",
-          "request": {
-            "method": "POST",
+          "request": {"method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "body": {
-              "mode": "raw",
+            "body": {"mode": "raw",
               "raw": "{\n  \"arrival_date\": \"{{voyage_actual_arrival}}\"\n}"
             },
             "url": { "raw": "{{base_url}}/voyages/{{voyage_id}}/arrive", "host": ["{{base_url}}"], "path": ["voyages", "{{voyage_id}}", "arrive"] }
@@ -434,13 +423,11 @@
         },
         {
           "name": "Create destination docking record",
-          "request": {
-            "method": "POST",
+          "request": {"method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "body": {
-              "mode": "raw",
+            "body": {"mode": "raw",
               "raw": "{\n  \"ship_id\": {{ship_id}},\n  \"dock_id\": {{destination_dock_id}},\n  \"arrival_date\": \"{{voyage_actual_arrival}}\",\n  \"purpose\": \"postman voyage arrival docking\"\n}"
             },
             "url": { "raw": "{{base_url}}/dockings/create", "host": ["{{base_url}}"], "path": ["dockings", "create"] }
@@ -467,10 +454,8 @@
           "request": {"method": "POST",
             "header": [],
             "url": { "raw": "{{base_url}}/dockings/{{docking_id}}/approve", "host": ["{{base_url}}"], "path": ["dockings", "{{docking_id}}", "approve"] }
-          },
-          "event": [
-            {
-              "listen": "test",
+          },"event": [
+            {"listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
@@ -486,8 +471,7 @@
         },
         {
           "name": "Confirm ship has entered the dock",
-          "request": {
-            "method": "PUT",
+          "request": {"method": "PUT",
             "header": [],
             "url": { "raw": "{{base_url}}/dockings/{{docking_id}}/arrive/", "host": ["{{base_url}}"], "path": ["dockings", "{{docking_id}}", "arrive", ""] }
           },
