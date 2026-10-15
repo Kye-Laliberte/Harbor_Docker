@@ -69,6 +69,7 @@ class DockService:
         """Fetch a dock by id or raise 404 if missing."""
         dock = self.db.query(Dock).filter(Dock.id == dock_id).first()
         if not dock:
+            logging.exception("404 Dock not found")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dock not found")
         return dock
 
@@ -102,11 +103,15 @@ class DockService:
     
      
     def delete_dock(self) -> None:
-        """"""
+        """deletes a dock however a ship can't be in the dock at the time"""
         if self.in_dock():
             logging.error(f"Attempted to delete dock {self.dock_id} while a ship is currently docked.")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="ship curently in dock")
-        self.db.delete(self.dock)
+        try:
+            self.db.delete(self.dock)
+        except:
+            self.db.rollback()
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="upcoming voyage or docking")
         self.db.commit()
-        
+        logging.info(f"dock {self.dock_id} delate")
         return None
