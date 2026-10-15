@@ -56,8 +56,8 @@ def test_update_dock(client, make_harbor_with_dock):
     assert data["cargo_capacity"] == 2000.0
 
 
-def test_delete_dock(client,db, make_harbor_with_dock):
-    harbor, dock = make_harbor_with_dock()
+def test_delete_dock(client, make_harbor_with_dock):
+    _, dock = make_harbor_with_dock()
 
     response = client.delete(f"/docks/{dock.id}/delete")
     assert response.status_code == 204

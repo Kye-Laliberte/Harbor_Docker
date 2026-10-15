@@ -13,7 +13,7 @@ def test_list_ships_empty(client):
 
 
 def test_create_ship(client, make_harbor_with_dock):
-    harbor, dock = make_harbor_with_dock(
+    _, dock = make_harbor_with_dock(
         dock_size=enums.VesselSize.SMALL,
         cargo_capacity=1000.0,
     )
@@ -123,7 +123,7 @@ def test_delete_ship_requires_docked():
     assert response2.status_code == 404
 """
 
-def test_current_docking_lookup(client, make_harbor_with_dock):
+def test_current_docking_search(client, make_harbor_with_dock):
     _, dock = make_harbor_with_dock(
         dock_size=enums.VesselSize.SMALL,
         cargo_capacity=1000.0,
@@ -149,10 +149,8 @@ def test_current_docking_lookup(client, make_harbor_with_dock):
     assert data["departure_date"] is None
 
 
-def test_delete_ship_removes_its_dockings_and_releases_dock(
-    client,
-    make_harbor_with_dock,
-):
+def test_delete_ship(client,make_harbor_with_dock,): 
+    """deletes a ship and its docking and releses the dock form inactive to active"""
     _, dock = make_harbor_with_dock(
         harbor_name="ship-delete-harbor",
         dock_size=enums.VesselSize.SMALL,

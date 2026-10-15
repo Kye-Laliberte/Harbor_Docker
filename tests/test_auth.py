@@ -5,8 +5,8 @@ from app.core.security import require_api_key
 from app.main import app
 
 
-def test_api_rejects_missing_key(monkeypatch):
-    monkeypatch.setattr(settings, "API_KEY", "auth-test-key")
+def test_api_rejects_missing_key(patch):
+    patch.setattr(settings, "API_KEY", "auth-test-key")
 
     response = TestClient(app).get("/")
 
