@@ -1,8 +1,7 @@
-from sqlalchemy import FLOAT, Column, Integer, String, TIMESTAMP, DateTime, ForeignKey, CheckConstraint, Enum 
-from  sqlalchemy.orm import backref, relationship, declarative_base
-from datetime import datetime
+from sqlalchemy import FLOAT, Column, Integer, String, TIMESTAMP, ForeignKey, CheckConstraint, Enum
+from sqlalchemy.orm import relationship
 from app.database import Base
-from app.enums import DockStatus, VesselSize, ShipStatus, ShipClearanceStatus, VoyageStatus
+from app.enums import DockStatus, ShipStatus, ShipClearanceStatus, VoyageStatus
 
 
 class  Dock(Base):
