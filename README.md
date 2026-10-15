@@ -378,8 +378,6 @@ $env:TEST_DATABASE_URL = "postgresql+psycopg2://<user>:<password>@localhost:5432
 pytest tests/test_harbor.py tests/test_dock.py tests/test_ship_endpoints.py -v
 ```
 
-Run the tests from the repository root. The test setup refuses SQLite URLs and
-refuses to use the application's configured database.
 
 ## 📝 Configuration
 

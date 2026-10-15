@@ -31,8 +31,22 @@ def test_engine():
         engine.dispose()
 
 
+@pytest.fixture(scope="session")
+def cleanup_test_database(test_engine):
+    existing_tables = set(inspect(test_engine).get_table_names())
+    model_tables = set(Base.metadata.tables)
+    if existing_tables.intersection(model_tables):
+        pytest.fail(
+            "TEST_DATABASE_URL must point to an empty database without "
+            "application tables.")
+    try:
+        yield
+    finally:
+        Base.metadata.drop_all(bind=test_engine)
+
+
 @pytest.fixture
-def test_connection(test_engine):
+def test_connection(test_engine, cleanup_test_database):
     connection = test_engine.connect()
     transaction = connection.begin()
     try:
