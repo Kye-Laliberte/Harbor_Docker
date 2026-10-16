@@ -364,18 +364,23 @@ alembic downgrade <revision_id>
 ## 🧪 Pytest
 
 The harbor, dock, and ship endpoint tests use PostgreSQL. Configure
-`TEST_DATABASE_URL` to point to a dedicated test database whose database name
-differs from the application's `DATABASE_URL`. The application `DATABASE_URL`
-must also be configured as usual. The test fixture rolls back each test's
-transaction and rolls back its temporary schema at the end of the pytest
-session, leaving no test rows or tables behind. The test database must not
-already contain the application's tables.
+`DATABASE_URL` in `.env` as usual and create a dedicated, empty PostgreSQL
+database named `harbor_test`. The test database must differ from the
+application database and must not already contain application tables. The
+runner derives `TEST_DATABASE_URL` from `DATABASE_URL`, changing only the
+database name, then runs these endpoint tests. Test data is rolled back and
+the test tables are removed after the pytest session.
 
-In PowerShell, for example:
+Run the default endpoint test suite in PowerShell:
 
 ```powershell
-$env:TEST_DATABASE_URL = "postgresql+psycopg2://<user>:<password>@localhost:5432/harbor_test"
-pytest tests/test_harbor.py tests/test_dock.py tests/test_ship_endpoints.py -v
+.\scripts\run-pytest.ps1
+```
+
+Pass pytest arguments to run a specific test file or selection:
+
+```powershell
+.\scripts\run-pytest.ps1 tests/test_ship_endpoints.py -v
 ```
 
 
