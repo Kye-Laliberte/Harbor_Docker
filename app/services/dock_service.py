@@ -34,31 +34,6 @@ def sev_get_dock(db: Session, dock_id: int) -> Dock:
     return dock
 
 
-def sev_update_dock(db: Session, dock_id: int, payload: DockUpdate) -> Dock:
-    """Update an existing dock with provided fields."""
-    dock = sev_get_dock(db, dock_id)
-    data = payload.model_dump(exclude_unset=True)
-
-    if data.get("harbor_id") is not None:
-        harbor = db.query(Harbor).filter(Harbor.id == data["harbor_id"]).first()
-        if not harbor:
-              # Rollback any changes to avoid leaving the dock in an inconsistent state
-            logging.error(f"Harbor with id {data['harbor_id']} not found while updating dock {dock.id}")
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Harbor not found")
-    
-    if harbor and dock.harbor_id != harbor.id:
-        logging.error(f"Dock with id {dock.id} does not belong to harbor {harbor.id}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail="Dock does not belong to the selected harbor",)
-    
-    for field, value in data.items():
-        setattr(dock, field, value)
-
-    db.commit()
-    db.refresh(dock)
-    return dock
-
-
 class DockService:
     def __init__(self,db:Session,dock_id):
         self.db=db
@@ -78,14 +53,10 @@ class DockService:
         if not self.dock:
             self.dock = sev_get_dock(self.db, self.dock.id)
         data = payload.model_dump(exclude_unset=True)
-
-        if data.get("harbor_id") is not None:
-            harbor = self.db.query(Harbor).filter(Harbor.id == data["harbor_id"]).first()
-            if not harbor:
-                self.db.rollback()  # Rollback any changes to avoid leaving the dock in an inconsistent state
-                logging.error(f"Harbor with id {data['harbor_id']} not found while updating dock {self.dock.id}")
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Harbor not found")
-
+        harbor = self.db.query(Harbor).filter(Harbor.id == self.dock.harbor_id).first()
+        if not harbor:
+            logging.error(f"Harbor with id {self.dock.harbor_id} not found while updating dock {self.dock.id}")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Harbor not found")
         for field, value in data.items():
             setattr(self.dock, field, value)
 
@@ -100,8 +71,6 @@ class DockService:
                 Docking.departure_date.is_(None),Docking.dock_id==self.dock_id).exists()).scalar()
         
         
-    
-     
     def delete_dock(self) -> None:
         """deletes a dock however a ship can't be in the dock at the time"""
         if self.in_dock():
