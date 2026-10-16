@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.enums import DockStatus, ShipStatus
-from app.models import Ship,Docking,Harbor, Dock,Voyage
+from app.models import Ship,Docking, Dock,Voyage
 from app.schemas import DockingCreate, ShipCreate, ShipUpdate
 def sev_list_ships(db: Session, skip: int = 0, limit: int = 100) -> List[Ship]:
     """Return a paginated list of ships from the database."""
@@ -82,14 +82,14 @@ class shipService:
             if payload.ship_size is not None:
                 if dock.dock_size > payload.ship_size:
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="ship_size to larg for dock")
-            
+        
+        if self.ship.current_cargo > self.ship.cargo_capacity:
+                    self.db.rollback()  # Rollback the changes to avoid leaving the ship in an inconsistent state
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="current_cargo cannot exceed cargo_capacity",)
+        
         for field, value in payload.model_dump(exclude_unset=True).items():
             setattr(self.ship, field, value)
-
-        if self.ship.current_cargo > self.ship.cargo_capacity:
-            self.db.rollback()  # Rollback the changes to avoid leaving the ship in an inconsistent state
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                detail="current_cargo cannot exceed cargo_capacity",)
 
         self.db.commit()
         self.db.refresh(self.ship)

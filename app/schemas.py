@@ -63,10 +63,9 @@ class DockRead(DockBase):
 
 
 class DockUpdate(BaseModel):
-    dock_code: Optional[int] = None
+    #dock_code: Optional[int] = None
     dock_status: Optional[enums.DockStatus] = None
     cargo_capacity: Optional[float] = Field(None, ge=0)
-    harbor_id: Optional[int] = None
     dock_size: Optional[enums.VesselSize] = None
 
 
