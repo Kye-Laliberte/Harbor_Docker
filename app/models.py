@@ -16,11 +16,13 @@ class  Dock(Base):
 
     harbor = relationship("Harbor", back_populates="docks")
     dockings = relationship("Docking", back_populates="dock")
-#class Captain(Base):
-#    __tablename__ = 'captains'
-#    id = Column(Integer, primary_key=True, index=True)
-#    name = Column(String(100), default='Unknown Captain', nullable=False)
-#    experience_years = Column(Integer, CheckConstraint('experience_years >= 0'), default=0, nullable=False)
+
+"""class Captain(Base):
+    __tablename__ = 'captains'
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), default='Unknown Captain', nullable=False)
+    experience_years = Column(Integer, CheckConstraint('experience_years >= 0'), default=0, nullable=False)
+"""
 
 class Ship(Base):
     __tablename__ = 'ships'

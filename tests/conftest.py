@@ -84,7 +84,7 @@ def db(test_connection):
 
 
 @pytest.fixture
-def client(db):
+def client(db:Session):
     previous_override = app.dependency_overrides.get(get_db)
     previous_api_key = settings.API_KEY
 
@@ -103,7 +103,7 @@ def client(db):
             app.dependency_overrides[get_db] = previous_override
 
 @pytest.fixture
-def make_harbor(db):
+def make_harbor(db:Session) -> Harbor:
     def factory(harbor_name="test_harbor", tz="UTC", lat=33.0, lon=-96.0):
         harbor = Harbor(name=harbor_name,
                         timezone=tz,latitude=lat,
@@ -117,7 +117,7 @@ def make_harbor(db):
 
 
 @pytest.fixture
-def make_harbor_with_dock(db, make_harbor):
+def make_harbor_with_dock(db:Session, make_harbor) -> {Harbor,Dock}:
     def factory(
         harbor_name="test_harbor",
         tz="UTC",

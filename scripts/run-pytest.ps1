@@ -62,6 +62,7 @@ if (-not $PytestArgs -or $PytestArgs.Count -eq 0){
         "tests/test_harbor.py",
         "tests/test_dock.py",
         "tests/test_ship_endpoints.py",
+        "test/test_auth.py",
         "-v")
 }
 Push-Location $repoRoot

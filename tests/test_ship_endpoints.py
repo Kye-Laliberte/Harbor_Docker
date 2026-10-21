@@ -15,8 +15,7 @@ def test_list_ships_empty(client):
 def test_create_ship(client, make_harbor_with_dock):
     _, dock = make_harbor_with_dock(
         dock_size=enums.VesselSize.SMALL,
-        cargo_capacity=1000.0,
-    )
+        cargo_capacity=1000.0,)
 
     payload = {
         "ship_name": "New Ship",
