@@ -222,11 +222,10 @@ The response contains predicted ship speed in km/h, route distance in km, and av
 
 Import `postman/Harbor API.postman_collection.json` and `postman/Harbor_API.postman_env.json` into Postman, then select the **Harbor Local** environment. For the Postman desktop app, keep `base_url` set to `http://localhost:8000`, which is the API port published by Docker Compose. Set the environment's `api_key` secret value to the value of `API_KEY` in your local `.env` file. Keep that value local and do not share or commit it. Requests send it in the `X-API-Key` header automatically.
 
-Before sending requests from the desktop app, start the API and apply migrations from PowerShell at the repository root:
+Before sending requests from the desktop app, start the API from PowerShell at the repository root. The API applies database migrations automatically before it starts serving requests:
 
 ```powershell
 docker compose up --build -d api
-docker compose exec -T api alembic upgrade head
 ```
 
 For the automated Newman run, use the same selected collection via the repository script:

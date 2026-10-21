@@ -27,6 +27,7 @@ services:
     build: .
     container_name: harbor-api
     restart: unless-stopped
+    command: ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]
     ports:
       - "8000:8000"
     healthcheck:
