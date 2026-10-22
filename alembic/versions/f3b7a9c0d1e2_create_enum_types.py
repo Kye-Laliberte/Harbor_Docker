@@ -73,9 +73,9 @@ def upgrade() -> None:
     op.execute("""
     DO $$
     BEGIN
-        IF (SELECT coalesce(udt_name, '') FROM information_schema.columns WHERE table_name='voyage' AND column_name='travel_status') != 'voyage_status' THEN
-            EXECUTE 'ALTER TABLE voyage ALTER COLUMN travel_status TYPE voyage_status USING travel_status::voyage_status';
-            EXECUTE 'ALTER TABLE voyage ALTER COLUMN travel_status SET DEFAULT ''scheduled''::voyage_status';
+        IF (SELECT coalesce(udt_name, '') FROM information_schema.columns WHERE table_name='voyages' AND column_name='travel_status') != 'voyage_status' THEN
+            EXECUTE 'ALTER TABLE voyages ALTER COLUMN travel_status TYPE voyage_status USING travel_status::voyage_status';
+            EXECUTE 'ALTER TABLE voyages ALTER COLUMN travel_status SET DEFAULT ''scheduled''::voyage_status';
         END IF;
     END
     $$;
@@ -97,8 +97,8 @@ def downgrade() -> None:
     op.execute("ALTER TABLE dockings ALTER COLUMN ship_clearance_status DROP DEFAULT")
     op.execute("ALTER TABLE dockings ALTER COLUMN ship_clearance_status TYPE TEXT USING ship_clearance_status::text")
 
-    op.execute("ALTER TABLE voyage ALTER COLUMN travel_status DROP DEFAULT")
-    op.execute("ALTER TABLE voyage ALTER COLUMN travel_status TYPE TEXT USING travel_status::text")
+    op.execute("ALTER TABLE voyages ALTER COLUMN travel_status DROP DEFAULT")
+    op.execute("ALTER TABLE voyages ALTER COLUMN travel_status TYPE TEXT USING travel_status::text")
 
     # Drop enum types if they exist (after columns are reverted)
     postgresql.ENUM(name='dock_status_enum').drop(bind, checkfirst=True)
