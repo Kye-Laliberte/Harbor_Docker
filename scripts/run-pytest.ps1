@@ -59,10 +59,10 @@ $env:TEST_DATABASE_URL = $testUrl.Uri.AbsoluteUri
 
 if (-not $PytestArgs -or $PytestArgs.Count -eq 0){
     $PytestArgs = @(
-        "tests/test_harbor.py",
-        "tests/test_dock.py",
+        "tests/test_harbor.py::TestHarbor",
+        "tests/test_dock.py::TestDock",
         "tests/test_ship_endpoints.py",
-        "test/test_auth.py",
+        "tests/test_auth.py",
         "-v")
 }
 Push-Location $repoRoot

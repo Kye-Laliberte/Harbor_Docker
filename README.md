@@ -374,12 +374,18 @@ Run the default endpoint test suite in PowerShell:
 
 ```powershell
 .\scripts\run-pytest.ps1
+runs all pytest 
 ```
 
 Pass pytest arguments to run a specific test file or selection:
 
 ```powershell
 .\scripts\run-pytest.ps1 tests/test_ship_endpoints.py -v
+Runs ship Pytest endpoints 
+```
+Run only the dock test class:
+```powershell
+.\scripts\run-pytest.ps1 tests/test_dock.py::TestDock -v
 ```
 
 
