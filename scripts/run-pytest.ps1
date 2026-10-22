@@ -61,7 +61,7 @@ if (-not $PytestArgs -or $PytestArgs.Count -eq 0){
     $PytestArgs = @(
         "tests/test_harbor.py::TestHarbor",
         "tests/test_dock.py::TestDock",
-        "tests/test_ship_endpoints.py",
+        "tests/test_ship_endpoints.py::Testship",
         "tests/test_auth.py",
         "-v")
 }
