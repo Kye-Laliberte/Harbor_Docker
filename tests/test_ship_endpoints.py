@@ -27,19 +27,18 @@ class Testship:
             "cargo_capacity":1000,
             "ship_size": enums.VesselSize.SMALL}
 
-        response = client.post(f"/ships/new?dock_id={dock.id}", json=payload)
-        assert response.status_code == 201
+        ship_info = client.post(f"/ships/new?dock_id={dock.id}", json=payload)
+        assert ship_info.status_code == 201 
+        assert ship_info.json()["ship_status"] == enums.ShipStatus.DOCKED
+        assert ship_info.json()["ship_size"] == enums.VesselSize.SMALL
+        assert ship_info.json()["registration_number"] == "1234"
+
     
         dock_data = client.get(f"/docks/{dock.id}/get")
         assert dock_data.status_code == 200
         assert dock_data.json()["id"] == dock.id
         assert dock_data.json()["dock_status"] == enums.DockStatus.INACTIVE
     
-        data = response.json()
-
-        assert data["ship_name"] == "new ship"
-        assert data["ship_status"] == enums.ShipStatus.DOCKED
-        assert data["current_cargo"] == 750
     
 
     def test_get_ship(self,client, db):
