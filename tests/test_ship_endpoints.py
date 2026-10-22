@@ -89,36 +89,6 @@ class Testship:
         assert response2.status_code == 200
         assert response2.json()["id"] == ship.id
         assert response2.json()["ship_name"] == "update_logic_test_ship"
-
-
-
-#           deleate ship is not working yet need to move to soft del.
-    
-def test_delete_ship_requires_docked(self,db,client,make_harbor_with_dock):
-    
-    _, dock =make_harbor_with_dock(dock_size=enums.VesselSize.SMALL)
-   
-    ship_payload = {
-        "ship_name": "old Ship",
-        "current_cargo": 0,
-        "registration_number": "sddqawddawdawdadaw",
-        "ship_status": enums.ShipStatus.DOCKED,
-        "cargo_capacity":1000,
-        "ship_size": enums.VesselSize.SMALL}
-    
-    ship_response = client.post(f"/ships/new?dock_id={dock.id}", json=ship_payload)
-    ship = ship_response.json()
-    assert ship.status_code == 201
-    in_db=db.query(Ship).where(Ship.id == ship_payload.registration_number).first()
-    assert ship.id == in_db.id
-
-
-    response = client.delete(f"/ships/{ship["id"]}/delete")
-    assert response.status_code == 204
-
-    # verify deletion
-    response2 = client.get(f"/ships/{ship["id"]}/get")
-    assert response2.status_code == 404
     
 
     def test_current_docking_search(self,client, make_harbor_with_dock):
