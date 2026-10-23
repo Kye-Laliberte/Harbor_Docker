@@ -40,6 +40,17 @@ def test_engine():
     app_url = make_url(settings.DATABASE_URL)
     if test_url.get_backend_name() != "postgresql":
         pytest.fail("TEST_DATABASE_URL must use PostgreSQL.")
+    if app_url.get_backend_name() != "postgresql":
+        pytest.fail("DATABASE_URL must use PostgreSQL.")
+    if _database_target(test_url) == _database_target(app_url):
+        pytest.fail(
+            "TEST_DATABASE_URL must not point to the same PostgreSQL server "
+            "address and database as DATABASE_URL."
+        )
+    if test_url.database != TEST_DATABASE_NAME:
+        pytest.fail(
+            f"TEST_DATABASE_URL must use the dedicated {TEST_DATABASE_NAME} database."
+        )
     if test_url.database == app_url.database:
         pytest.fail("TEST_DATABASE_URL must not point to the application's database.")
 
