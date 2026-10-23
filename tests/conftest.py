@@ -117,7 +117,7 @@ def make_harbor(db:Session) -> Harbor:
 
 
 @pytest.fixture
-def make_harbor_with_dock(db:Session, make_harbor) -> {Harbor,Dock}:
+def make_harbor_with_dock(db:Session, make_harbor) -> tuple[Harbor,Dock]:
     def factory(
         harbor_name="test_harbor",
         tz="UTC",

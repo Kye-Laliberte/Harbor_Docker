@@ -26,8 +26,4 @@ def create_ship(db, name="Test Ship", status=enums.ShipStatus.DOCKED, cargo_capa
     
     return ship
 
-def get_ship_stat(db,ship_id):
-    ship_status = db.execute(text("SELECT ship_status from ships WHERE id = :ship_id "),
-                             {"ship_id":ship_id}).scalar_one()
-    if ship_status:
-        return ship_status
+
