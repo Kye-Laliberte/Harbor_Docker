@@ -11,6 +11,25 @@ from app.models import Base, Dock, Harbor
 from test_helpers import authenticated_client
 
 
+TEST_DATABASE_NAME = "harbor_test"
+
+
+def _database_target(database_url):
+    host = database_url.host
+    if host is not None:
+        host = host.lower()
+        if host in {
+            "localhost",
+            "127.0.0.1",
+            "::1",
+            "postgres",
+            "harbor-postgres",
+        }:
+            host = "local-postgres"
+
+    return host, database_url.port or 5432, database_url.database
+
+
 @pytest.fixture(scope="session")
 def test_engine():
     database_url = os.environ.get("TEST_DATABASE_URL")
