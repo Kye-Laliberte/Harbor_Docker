@@ -220,29 +220,31 @@ The response contains predicted ship speed in km/h, route distance in km, and av
 
 ## Postman
 
-Import `postman/Harbor API.postman_collection.json` and `postman/Harbor_API.postman_env.json` into Postman, then select the **Harbor Local** environment. For the Postman desktop app, keep `base_url` set to `http://localhost:8000`, which is the API port published by Docker Compose. Set the environment's `api_key` secret value to the value of `API_KEY` in your local `.env` file. Keep that value local and do not share or commit it. Requests send it in the `X-API-Key` header automatically.
+Import `postman/Harbor API.postman_collection.json` and `postman/Harbor_API.postman_env.json` into Postman, then select the **Harbor Local** environment. The environment targets the isolated Postman test API on `http://localhost:8001`, not the application API. Set its `api_key` secret value to `API_KEY` from your local `.env` file. Keep that value local and do not share or commit it. Requests send it in the `X-API-Key` header automatically.
 
-Before sending requests from the desktop app, start the API from PowerShell at the repository root. The API applies database migrations automatically before it starts serving requests:
+The Postman collection creates harbor, dock, ship, docking, and voyage data. Run it against the isolated Postman test API so these requests cannot add data to the application database.
 
 ```powershell
-docker compose up --build -d api
+docker compose --profile test up --build -d postman-postgres postman-api
 ```
 
-For the automated Newman run, use the same selected collection via the repository script:
+The **Harbor Local** Postman environment points to `http://localhost:8001`, the isolated test API. Enter the local `.env` value for `API_KEY` in its secret `api_key` variable. To discard test data and stop the desktop test API, remove its containers:
+
+```powershell
+docker compose --profile test rm --stop --force postman-api postman-postgres
+```
+
+For the automated Newman run, use:
 
 ```powershell
 .\scripts\test-api.ps1
 ```
 
-To check the running database connection and make an authenticated API request using `API_KEY` from `.env`, run:
+The script creates a fresh test database in a temporary filesystem, runs migrations and the collection against it, then removes only its isolated test stack. It does not start or migrate the regular API or application database. The Postman collection environment contains no API key. The standard application API remains available separately at `http://localhost:8000`.
 
-```powershell
-.\scripts\conecton_health.ps1
-```
+Newman does not stop at the first failed request. It continues to the collection's cleanup folder, reports failed assertions, and exits nonzero so the PowerShell runner can still fail the test job. The runner removes the disposable database stack in all cases.
 
-This health check does not print or copy the API key. Start the stack first with `docker compose up -d api`. For the Postman desktop app, enter the local `.env` API key into the **Harbor Local** environment's secret `api_key` variable; the exported environment intentionally does not contain a key.
-
-The script builds and starts the API and database, applies Alembic migrations, and runs the collection in a disposable Newman container. Inside Docker Compose, Newman connects to `http://api:8000` using the Compose service name; it must not use `localhost`, which would point back to the Newman container itself. Compose passes Newman only `API_KEY` from `.env` and the internal base URL; database credentials are not passed to the test container. No Postman environment export or separately configured `POSTMAN_BASE_URL` is needed. Neither the workflow nor the collection calls prediction or model-training endpoints.
+Inside Docker Compose, Newman connects to `http://postman-api:8000`; it does not use `localhost`, which would point back to the Newman container. Database credentials are not passed to the Newman container. Neither the workflow nor the collection calls prediction or model-training endpoints.
 
 ## ⚙️ Business Rules & Constraints
 
