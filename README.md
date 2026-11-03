@@ -54,10 +54,16 @@ Docker-api/
 │   └── script.py.mako               # Migration template
 ├── sql/
 │   └── schema.sql                   # Initial database schema
-├── tests/                           # Test suite
-│   ├── test_endpoints.py            # Endpoint integration tests
-│   ├── test_docking_voyage_flow.py  # Workflow integration tests
-│   └── test_voyage_service.py       # Service-level tests
+├── tests/                           # Pytest endpoint and auth tests
+│   ├── conftest.py                  # Isolated PostgreSQL test fixtures
+│   ├── test_auth.py                 # API key authentication tests
+│   ├── test_dock.py                 # Dock endpoint tests
+│   ├── test_harbor.py               # Harbor endpoint tests
+│   └── test_ship_endpoints.py       # Ship endpoint tests
+├── postman/                         # Postman collection and Newman runner
+├── scripts/
+│   ├── run-pytest.ps1               # Local PostgreSQL-backed Pytest runner
+│   └── test-api.ps1                 # Isolated Docker/Newman API test runner
 ├── Dockerfile                       # Container image definition
 ├── docker-compose.yml               # Multi-container orchestration
 ├── alembic.ini                      # Alembic configuration
@@ -218,33 +224,69 @@ GET /voyages/predict?ship_id=1&departure_harbor_id=1&destination_harbor_id=2
 
 The response contains predicted ship speed in km/h, route distance in km, and average voyage time in hours. Completed voyages recorded through `POST /voyages/{voyage_id}/arrive` provide the supervised training samples. Before valid training data exists, `model_trained` is `false` and the API uses a 20 km/h cold-start baseline.
 
-## Postman
+## 🧪 QA Automation
 
-Import `postman/Harbor API.postman_collection.json` and `postman/Harbor_API.postman_env.json` into Postman, then select the **Harbor Local** environment. The environment targets the isolated Postman test API on `http://localhost:8001`, not the application API. Set its `api_key` secret value to `API_KEY` from your local `.env` file. Keep that value local and do not share or commit it. Requests send it in the `X-API-Key` header automatically.
+The repository includes PostgreSQL-backed endpoint tests with Pytest and an API workflow collection that can run interactively in Postman or automatically through Newman. Both test workflows use a database separate from the application database.
 
-The Postman collection creates harbor, dock, ship, docking, and voyage data. Run it against the isolated Postman test API so these requests cannot add data to the application database.
+### Postman / Newman
 
-```powershell
-docker compose --profile test up --build -d postman-postgres postman-api
-```
+The Postman collection checks authentication and API startup, then exercises a voyage lifecycle across harbors, docks, ships, dockings, and voyages. Its cleanup folder removes the records created by the workflow.
 
-The **Harbor Local** Postman environment points to `http://localhost:8001`, the isolated test API. Enter the local `.env` value for `API_KEY` in its secret `api_key` variable. To discard test data and stop the desktop test API, remove its containers:
+For an interactive run:
 
-```powershell
-docker compose --profile test rm --stop --force postman-api postman-postgres
-```
+1. Start the isolated Postman API and database:
 
-For the automated Newman run, use:
+   ```powershell
+   docker compose --profile test up --build -d postman-postgres postman-api
+   ```
+
+2. Import `postman/Harbor API.postman_collection.json` and `postman/Harbor_API.postman_env.json` into Postman.
+3. Select the **Harbor Local** environment and set its `api_key` secret to the `API_KEY` value from your local `.env` file. Keep the key private and do not commit it.
+4. Run the collection against `http://localhost:8001`. This is the isolated test API, not the regular application API at `http://localhost:8000`.
+5. When finished, stop and remove the test services:
+
+   ```powershell
+   docker compose --profile test rm --stop --force postman-api postman-postgres
+   ```
+
+For an automated Newman run, make sure `.env` defines a non-empty `API_KEY`
+and the Docker Compose database settings (`POSTGRES_USER`, `POSTGRES_PASSWORD`,
+and `POSTGRES_DB`), then run:
 
 ```powershell
 .\scripts\test-api.ps1
 ```
 
-The script creates a fresh test database in a temporary filesystem, runs migrations and the collection against it, then removes only its isolated test stack. It does not start or migrate the regular API or application database. The Postman collection environment contains no API key. The standard application API remains available separately at `http://localhost:8000`.
+The script builds a uniquely named test stack with a fresh PostgreSQL database on temporary storage, applies migrations, runs Newman, and removes that stack even if tests fail. It does not start, migrate, or write to the regular application database. Newman connects to the API over the Compose network (`http://postman-api:8000`); database credentials are not passed to the Newman container. Failed assertions are reported, cleanup requests still run, and the test command exits nonzero on failure.
 
-Newman does not stop at the first failed request. It continues to the collection's cleanup folder, reports failed assertions, and exits nonzero so the PowerShell runner can still fail the test job. The runner removes the disposable database stack in all cases.
+### Pytest
 
-Inside Docker Compose, Newman connects to `http://postman-api:8000`; it does not use `localhost`, which would point back to the Newman container. Database credentials are not passed to the Newman container. Neither the workflow nor the collection calls prediction or model-training endpoints.
+The Harbor, Dock, Ship, and authentication tests use PostgreSQL. Configure
+`DATABASE_URL` in `.env` (or in the process environment) and create a dedicated,
+empty PostgreSQL database named `harbor_test`. It must be on a different
+database target from the application database and must not already contain
+application tables. The runner derives `TEST_DATABASE_URL` from
+`DATABASE_URL`, changing the database name to `harbor_test`; the test fixtures
+create the schema and remove it after the test session.
+
+Install the project dependencies before running the tests:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+Run the default endpoint and authentication test suite in PowerShell:
+
+```powershell
+.\scripts\run-pytest.ps1
+```
+
+The runner accepts normal Pytest arguments to select a test file or test:
+
+```powershell
+.\scripts\run-pytest.ps1 tests/test_ship_endpoints.py -v
+.\scripts\run-pytest.ps1 tests/test_dock.py::TestDock -v
+```
 
 ## ⚙️ Business Rules & Constraints
 
@@ -362,35 +404,6 @@ alembic downgrade -1
 alembic downgrade <revision_id>
 ```
 
-## 🧪 Pytest
-
-The harbor, dock, and ship endpoint tests use PostgreSQL. Configure
-`DATABASE_URL` in `.env` as usual and create a dedicated, empty PostgreSQL
-database named `harbor_test`. The test database must differ from the
-application database and must not already contain application tables. The
-runner derives `TEST_DATABASE_URL` from `DATABASE_URL`, changing only the
-database name, then runs these endpoint tests. Test data is rolled back and
-the test tables are removed after the pytest session.
-
-Run the default endpoint test suite in PowerShell:
-
-```powershell
-.\scripts\run-pytest.ps1
-runs all pytest 
-```
-
-Pass pytest arguments to run a specific test file or selection:
-
-```powershell
-.\scripts\run-pytest.ps1 tests/test_ship_endpoints.py -v
-Runs ship Pytest endpoints 
-```
-Run only the dock test class:
-```powershell
-.\scripts\run-pytest.ps1 tests/test_dock.py::TestDock -v
-```
-
-
 ## 📝 Configuration
 
 ### Environment Variables (app/core/config.py)
@@ -502,7 +515,7 @@ GET /dockings/list?skip=20&limit=50
 
 ## 🐛 Known Issues
 
-pytest is not working.
+See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for current known issues.
 
 
 ## 💬 Support
@@ -517,7 +530,7 @@ For issues, questions, or feature requests:
 
 1. Create feature branch from `main`
 2. Make changes and add tests
-3. Run tests: `pytest tests/`
+3. Run the endpoint and authentication tests with `.\scripts\run-pytest.ps1` after configuring the dedicated `harbor_test` database.
 4. Create pull request with description
 
 ---
