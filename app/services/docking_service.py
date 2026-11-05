@@ -2,7 +2,6 @@ from typing import List, Optional
 from datetime import datetime, timezone
 import logging
 from fastapi import HTTPException, status
-from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 import app.enums as enums
@@ -74,6 +73,79 @@ class DockingService:
         self.db.refresh(self.docking)
         return self.docking
 
+    def deny(self) -> Docking:
+        """Deny a pending docking request."""
+        if self.docking is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docking not found")
+        
+        if self.docking.ship_clearance_status != enums.ShipClearanceStatus.PENDING:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Docking is not pending")
+        self.docking.ship_clearance_status = enums.ShipClearanceStatus.DENIED
+        self.db.commit()
+        self.db.refresh(self.docking)
+        return self.docking
+    
+    def deny_and_redirect(self) -> Docking:
+        """Deny a pending docking request and create a new docking at a open dock, if available."""
+        # Deny the current docking
+        self.deny()
+        # Attempt to find an open dock for the ship
+        ship = shipService(self.db, self.docking.ship_id).ship
+               
+        # Find an open dock that can accommodate the ship
+        open_docks = (
+            self.db.query(Dock)
+            .filter(Dock.dock_status == enums.DockStatus.ACTIVE)
+            .filter(Dock.dock_size >= ship.ship_size)
+            .filter(Dock.cargo_capacity >= ship.current_cargo)
+            .all())
+
+        if not open_docks:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No available dock for the ship")
+        
+        # check if dock has incoming voyages and dockings
+        best_docking:Docking = None
+        open_dock:Dock = None
+        best_time_gap = -1  # Initialize with a negative value to ensure any positive time gap is considered better
+        for dock in open_docks:
+            
+            incoming_docking = (self.db.query(Docking)
+                .filter(Docking.dock_id == dock.id)
+                .filter(Docking.departure_date.is_(None))
+                .filter(Docking.ship_clearance_status == enums.ShipClearanceStatus.APPROVED)
+                .first())
+            
+            # If there are no incoming voyages or dockings, we can use this dock
+            if not incoming_docking:
+                open_dock = dock
+                break
+
+            time_gap = (incoming_docking.arrival_date - datetime.now(dock.harbor.timezone)).total_seconds()
+
+            # finds the dock with the latest incoming docking and uses that one if no other open docks are available
+            if (best_docking is None or time_gap > best_time_gap):
+                best_docking = incoming_docking
+                best_time_gap = time_gap
+
+        if not open_dock:            
+            if best_docking and best_time_gap > 6 * 3600:  # 6 hours away in seconds
+                logging.info(f"Using best available dock for ship {ship.id} after denying docking {self.docking.id}, which is {best_time_gap / 3600:.2f} hours away")
+                open_dock = self.db.query(Dock).filter(Dock.id == best_docking.dock_id).first()
+                # note: this is the best available dock, and ship speed my create situatons where the ship arrives before the other ships leave or arrived.
+            else:
+                logging.info(f"No suitable open dock found for ship {ship.id} after denying docking {self.docking.id}")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No available dock for the ship after denying the docking")
+            
+        # Create a new docking at the open dock
+        new_docking_payload = DockingCreate(
+            dock_id=open_dock.id,
+            ship_id=ship.id,
+            arrival_date=self.docking.arrival_date,
+            departure_date=self.docking.departure_date,)
+        
+        new_docking = sev_create_docking(self.db,new_docking_payload,allow_initial_docking=True)
+        return new_docking
+    
 def validate_docking_input(dock_id: int, ship_id: int,db: Session,
     arrivel:datetime,departure:datetime,allow_initial_docking: bool = False,):
     """Validate docking business rules before creating a docking."""
@@ -86,7 +158,7 @@ def validate_docking_input(dock_id: int, ship_id: int,db: Session,
 
     ship = shipService(db=db,ship_id=ship_id).ship
     if not allow_initial_docking and ship.ship_status != enums.ShipStatus.SAILING:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Ship is not sailing (current status: {ship.ship_status.value})")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Ship is not sailing (current status: {ship.ship_status.value} and {allow_initial_docking})")
 
     if not _check_size_compatibility(dock, ship):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ship size incompatible with dock size")

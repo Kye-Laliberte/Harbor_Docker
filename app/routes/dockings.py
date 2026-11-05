@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
+from app.models import Docking
 from app.schemas import DockingRead, DockingCreate
 from app.services.docking_service import sev_create_docking, DockingService
 
@@ -36,6 +37,17 @@ def get_docking(docking_id: int, db: Session = Depends(get_db)):
     """Retrieve a docking by id."""
     return DockingService(db,docking_id).docking
 
+@router.put("/{ship_id}/deny_and_redirect", response_model=DockingRead, status_code=status.HTTP_200_OK)
+def deny_and_redirect_docking(ship_id:int, db:Session=Depends(get_db)):
+    """Deny a docking and redirect the ship to a dock in the same harbor."""
+    
+    next_docking = (db.query(Docking) 
+        .filter(Docking.ship_id== ship_id, Docking.departure_date == None)
+        .first())
+
+    out = DockingService(db,next_docking.id).deny_and_redirect()
+    return out
+     
 
 @router.delete("/{docking_id}/delete", status_code=status.HTTP_200_OK)# dont use unless for cansalaton of a docking 
 def delete_docking(docking_id: int, db: Session = Depends(get_db)):
