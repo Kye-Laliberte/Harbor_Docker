@@ -1,3 +1,4 @@
+import datetime
 import os
 import pytest
 from sqlalchemy import create_engine, inspect
@@ -5,10 +6,13 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.dependencies import get_db
-from app.enums import DockStatus, VesselSize
+from app.enums import DockStatus, ShipStatus, VesselSize, VoyageStatus
 from app.main import app
-from app.models import Base, Dock, Harbor
-from test_helpers import authenticated_client
+from app.models import Base, Dock, Docking, Harbor, Ship, Voyage
+from app.schemas import DockingCreate, VoyageCreate
+from app.services.docking_service import sev_create_docking
+from app.services.voyage_service import VoyageService
+
 
 
 TEST_DATABASE_NAME = "harbor_test"
@@ -118,6 +122,12 @@ def client(db:Session):
     previous_override = app.dependency_overrides.get(get_db)
     previous_api_key = settings.API_KEY
 
+    def authenticated_client(app):
+        from fastapi.testclient import TestClient
+        settings.API_KEY = "test-api-key"
+        return TestClient(app, headers={"X-API-Key": settings.API_KEY})
+
+
     def override_get_db():
         yield db
 
@@ -174,5 +184,85 @@ def make_harbor_with_dock(db:Session, make_harbor) -> tuple[Harbor,Dock]:
         db.commit()
         db.refresh(dock)
         return harbor, dock
+
+    return factory
+
+@pytest.fixture
+def make_sailing_ship(db:Session, add_docked_ship, make_harbor_with_dock) -> tuple[Dock,Harbor,Voyage]:
+    """Fixture to create a ship that is currently sailing."""
+    
+    def factory(
+        ship_name="Sailing Ship",
+        cargo_capacity=500,
+        cargo=1,
+        ship_size=VesselSize.SMALL,):
+
+        # Create a docked ship first
+        docking_tupel = add_docked_ship(
+            ship_name=ship_name,
+            cargo_capacity=cargo_capacity,
+            cargo=cargo,
+            ship_size=ship_size,)
+        
+        destination_harbor, _ = make_harbor_with_dock(harbor_name="Destination Harbor",dock_size=ship_size)
+        
+       
+        
+        # Create a voyage for the ship to mark it as sailing
+        voyage = VoyageService(db=db,v_id=None).create_voyage(payload=VoyageCreate(ship_id=docking_tupel[1].id,
+                                                                                   departure_harbor_id=docking_tupel[0].id,
+                                                                                   destination_harbor_id=destination_harbor.id,
+                                                                                   departure_date = datetime.datetime.now(datetime.timezone.utc),
+                                                                                   arrival_date=None,travel_status= VoyageStatus.APPROVED))
+        #leave dock 
+        db.add(voyage)
+        VoyageService(db,v_id=voyage.id).leave_dock()
+
+        
+        db.commit()
+        db.refresh(voyage)
+        out:tuple = [docking_tupel[1], destination_harbor, voyage]
+        return out
+
+    return factory
+
+@pytest.fixture
+def add_docked_ship(db:Session, make_harbor_with_dock) -> tuple[Harbor,Ship,Dock,Docking]:
+    """Fixture to create a docked ship with an initial docking."""
+    def factory(
+        ship_name="Docked testing Ship",
+        status = ShipStatus.DOCKED,
+        cargo_capacity=500,
+        cargo=1,
+        ship_size=VesselSize.SMALL,):
+
+        harbor, dock = make_harbor_with_dock(dock_size=ship_size)
+        ship = Ship(
+            ship_name=ship_name,
+            current_cargo=cargo,
+            ship_status=status,
+            registration_number=ship_name,
+            cargo_capacity=cargo_capacity,
+            ship_size=ship_size,
+        )
+        db.add(ship)
+        db.flush() 
+
+        # Create an initial docking for the ship
+        docking = sev_create_docking(
+            db,payload=DockingCreate(
+                ship_id=ship.id,
+                dock_id=dock.id,
+                arrival_date=datetime.datetime.now(datetime.timezone.utc),
+                purpose="initial docking",
+            ),
+            allow_initial_docking=True)
+
+        db.add(docking)
+        db.commit()
+        db.refresh(ship)
+        db.refresh(docking)
+        out:tuple=[harbor,ship,dock,docking]
+        return out
 
     return factory
