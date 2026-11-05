@@ -41,37 +41,23 @@ class Testship:
     
     
 
-    def test_get_ship(self,client, db):
-        ship = create_ship(db,name="test_ship_get")
-
-        response = client.get(f"/ships/{ship.id}/get")
+    def test_get_ship(self,client, add_docked_ship):
+        ship:tuple = add_docked_ship()
+        
+        response = client.get(f"/ships/{ship[1].id}/get")
         assert response.status_code == 200
-        assert response.json()["id"] == ship.id
+        assert response.json()["id"] == ship[1].id
 
 
-    def test_update_docked_ship(self,client, make_harbor_with_dock):
-        _, dock = make_harbor_with_dock(
-            dock_size=enums.VesselSize.SMALL,
-            cargo_capacity=1000.0,)
-    
-        ship_payload = {
-            "ship_name": "test Ship",
-            "current_cargo": 0,
-            "registration_number": "12345",
-            "ship_status": enums.ShipStatus.DOCKED,
-            "cargo_capacity":1000,
-            "ship_size": enums.VesselSize.SMALL}
-        ship_response = client.post(f"/ships/new?dock_id={dock.id}", json=ship_payload)
-        assert ship_response.status_code == 201
-    
-        ship = ship_response.json()
-        assert ship["ship_name"] == "test ship"
-        assert ship["ship_status"] == enums.ShipStatus.DOCKED
-
+    def test_update_docked_ship(self,client, add_docked_ship):
+        
         payload = {
             "ship_name": "Updated Ship",}
 
-        response = client.put(f"/ships/{ship["id"]}/update", json=payload)
+        ship:tuple = add_docked_ship(ship_name="test Ship",cargo_capacity=1000,
+                    cargo = 0,ship_size = enums.VesselSize.SMALL)
+
+        response = client.put(f"/ships/{ship[1].id}/update", json=payload)
         assert response.status_code == 200
         assert response.json()["ship_name"] == "updated ship"
 
