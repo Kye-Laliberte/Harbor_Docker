@@ -87,6 +87,17 @@ def delete_voyage(voyage_id: int, db: Session = Depends(get_db)):
     voy.delete_voyage(voyage_id)
     return None
 
+
+@router.put("/{voyage_id}/cancel", response_model=VoyageRead, status_code=status.HTTP_200_OK)
+def cancel_voyage(voyage_id: int,db:Session =Depends(get_db)):
+    """Cancel a voyage by id."""
+    voy = VoyageService(db=db,v_id=voyage_id)
+    
+    if voy.voyage.travel_status in [enums.VoyageStatus.ARRIVED, enums.VoyageStatus.CANCELLED]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="this voyage has already arrived")
+    
+    return voy.cancel_voyage()
+
 @router.post("/trane", status_code=status.HTTP_200_OK)
 def trane_data(db:Session =Depends(get_db)):
     training_sample_count(db=db)

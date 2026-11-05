@@ -270,4 +270,70 @@ class VoyageService:
         self.db.commit()
         return True
 
-   
+    def cancel_voyage(self) -> Voyage:
+        """Cancel a voyage by id."""
+        if self.voyage is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Voyage not found")
+        if self.voyage.travel_status != VoyageStatus.APPROVED:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only approved voyages can be cancelled",)
+        if self.ship_sev.ship.ship_status == ShipStatus.SAILING:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot cancel a voyage while the ship is sailing",)
+        self.voyage.travel_status = VoyageStatus.CANCELLED
+        self.db.commit()
+        self.db.refresh(self.voyage)
+        return self.voyage
+
+    def redirect_voyage_at_sea(self, harbor_id:int, payload:Updatedates)->Voyage:
+        """Redirect a voyage to a new destination harbor while at sea."""
+        if self.voyage is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Voyage not found")
+        if self.voyage.travel_status != VoyageStatus.DEPARTED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only departed voyages can be redirected",)
+
+        harbor_sev = HarborService(self.db)
+        ship = self.ship_sev.ship or self.ship_sev.sev_get_ship(ship_id=self.voyage.ship_id)
+        if ship.ship_status != ShipStatus.SAILING:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only voyages on ships currently at sea can be redirected",
+            )
+        if harbor_id == self.voyage.destination_harbor_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Voyage is already bound for this destination harbor",
+            )
+
+        size_filter(self.db, harbor_id, ship.ship_size)
+        destination = harbor_sev.get_harbor(harbor_id)
+        departure_harbor = harbor_sev.get_harbor(harbor_id=self.voyage.departure_harbor_id)
+
+        if None in (
+            departure_harbor.latitude,
+            departure_harbor.longitude,
+            destination.latitude,
+            destination.longitude,):
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="departure and destination harbors must have latitude and longitude",)
+
+        # A redirect must not rewrite the voyage's actual departure time.
+        departure_date = self.voyage.departure_date or _utcnow()
+        estimated_arrival, _, _ = estimate_arrival(self.db, ship, departure_harbor, destination, departure_date)
+        arrival_date = payload.arrival_date or self.voyage.arrival_date
+        self.date_validation(departure_date, arrival_date, estimated_arrival)
+
+        self.voyage.destination_harbor_id = harbor_id
+        self.voyage.arrival_date = arrival_date
+        self.voyage.estimated_arrival = estimated_arrival
+        
+        
+        self.db.commit()
+        self.db.refresh(self.voyage)
+        return self.voyage
+
+    
