@@ -21,7 +21,7 @@ def create_docking(payload: DockingCreate, db: Session = Depends(get_db)):
     return sev_create_docking(db, payload)
 
 
-@router.put("/{docking_id}/arrive/", status_code=status.HTTP_202_ACCEPTED)
+@router.put("/{docking_id}/arrive", status_code=status.HTTP_202_ACCEPTED)
 def dock_at_port(docking_id:int, db:Session =Depends(get_db)):
     docking = DockingService(db,docking_id=docking_id).status_update(docking_id)
     return {"status": "entered", "docking_id": docking.id}

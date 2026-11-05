@@ -419,9 +419,10 @@ SQLALCHEMY_ECHO       # Enable SQL logging (default: False)
 POSTGRES_USER=harbor_user
 POSTGRES_PASSWORD=harbor_password
 POSTGRES_DB=harbor_db
-DATABASE_URL=postgresql://harbor_user:secure_password@localhost:5432/harbor_db
-api_key=replace_with_a_private_key
+DATABASE_URL=postgresql://harbor_user:harbor_password@localhost:5432/harbor_db
+API_KEY=replace_with_a_private_key
 SQLALCHEMY_ECHO=False
+TEST_DATABASE_URL = postgresql+psycopg2://POSTGRES_USER>:POSTGRES_PASSWORD@localhost:5432/harbor_test
 ```
 
 ## 🔍 Error Handling
@@ -513,21 +514,10 @@ GET /dockings/list?skip=20&limit=50
 - [ ] GraphQL API alongside REST
 - [ ] Mobile app support
 
-## 🐛 Known Issues
-
+## Known Issues
 See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for current known issues.
 
-
-## 💬 Support
-
-For issues, questions, or feature requests:
-1. Check existing issues in repository
-2. Review test cases in `tests/`
-3. Check API documentation at `/docs` endpoint
-4. Open a new issue with detailed description
-
-## 🤝 Contributing
-
+##  Contributing
 1. Create feature branch from `main`
 2. Make changes and add tests
 3. Run the endpoint and authentication tests with `.\scripts\run-pytest.ps1` after configuring the dedicated `harbor_test` database.
