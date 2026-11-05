@@ -186,6 +186,7 @@ class VoyageService:
         return self.voyage
 
     def change_destonaton(self, harbor_id: int, payload: Updatedates):
+        """Change the destination harbor for a voyage with validation."""
         if self.voyage is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Voyage not found")
 

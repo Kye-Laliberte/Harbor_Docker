@@ -61,7 +61,7 @@ def leave_voyage_dock(ship_id: int, db: Session = Depends(get_db)):
               .filter(Voyage.ship_id == ship_id)
               .filter(Voyage.travel_status ==enums.VoyageStatus.APPROVED).first())
     if not voyage:
-        HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="ship not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="ship not found")
 
     return VoyageService(db=db,v_id=voyage.id).leave_dock()
 

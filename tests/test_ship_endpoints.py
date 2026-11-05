@@ -1,8 +1,6 @@
 from test_helpers import create_ship
 import app.enums as enums
-from app.models import Ship
-
-
+from app.models import Dock
 # -------------------------------------------------------------------
 # Tests
 # -------------------------------------------------------------------

@@ -204,10 +204,8 @@ def make_sailing_ship(db:Session, add_docked_ship, make_harbor_with_dock) -> tup
             cargo=cargo,
             ship_size=ship_size,)
         
-        destination_harbor, _ = make_harbor_with_dock(harbor_name="Destination Harbor",dock_size=ship_size)
-        
-       
-        
+        destination_harbor,_ = make_harbor_with_dock(harbor_name="Destination Harbor",dock_size=ship_size)
+         
         # Create a voyage for the ship to mark it as sailing
         voyage = VoyageService(db=db,v_id=None).create_voyage(payload=VoyageCreate(ship_id=docking_tupel[1].id,
                                                                                    departure_harbor_id=docking_tupel[0].id,
@@ -249,8 +247,8 @@ def add_docked_ship(db:Session, make_harbor_with_dock) -> tuple[Harbor,Ship,Dock
         db.flush() 
 
         # Create an initial docking for the ship
-        docking = sev_create_docking(
-            db,payload=DockingCreate(
+        docking = sev_create_docking(db
+                ,payload=DockingCreate(
                 ship_id=ship.id,
                 dock_id=dock.id,
                 arrival_date=datetime.datetime.now(datetime.timezone.utc),

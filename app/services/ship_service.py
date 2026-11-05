@@ -3,7 +3,7 @@ import logging
 from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from app.enums import DockStatus, ShipStatus
+from app.enums import DockStatus, ShipClearanceStatus, ShipStatus, VoyageStatus
 from app.models import Ship,Docking, Dock,Voyage
 from app.schemas import DockingCreate, ShipCreate, ShipUpdate
 def sev_list_ships(db: Session, skip: int = 0, limit: int = 100) -> List[Ship]:
@@ -129,7 +129,7 @@ class shipService:
         if self.ship.ship_status is not ShipStatus.SAILING:
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Ship is not currently sailing")
 
-        out = (self.db.query(Voyage).join(Voyage.ship_id  == Ship.id).filter(Voyage.ship_id == self.ship.id, Voyage.arrival_date.is_(None)).first())
+        out = (self.db.query(Voyage).join(Voyage.ship_id  == Ship.id).filter(Voyage.ship_id == self.ship.id, Voyage.arrival_date.is_(None), Voyage.travel_status != VoyageStatus.DEPARTED).first())
 
         if  out is None:
             return False
