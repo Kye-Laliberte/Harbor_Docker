@@ -188,7 +188,7 @@ def make_harbor_with_dock(db:Session, make_harbor) -> tuple[Harbor,Dock]:
     return factory
 
 @pytest.fixture
-def make_sailing_ship(db:Session, add_docked_ship, make_harbor_with_dock) -> tuple[Dock,Harbor,Voyage]:
+def make_sailing_ship(db:Session, add_docked_ship, make_harbor_with_dock) -> tuple[Ship,Harbor,Voyage]:
     """Fixture to create a ship that is currently sailing."""
     
     def factory(
