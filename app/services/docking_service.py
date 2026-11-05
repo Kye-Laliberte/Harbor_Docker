@@ -154,9 +154,14 @@ def _check_overlaps(db: Session, ship_id: int, dock_id: int, arrival: datetime,
     Output:
         Raises an HTTP 400 error if an overlapping docking is found.
     """
-    # A docking remains a conflict regardless of its clearance status.
-    existing_for_dock = db.query(Docking).filter(Docking.dock_id == dock_id).all()
-    existing_for_ship = db.query(Docking).filter(Docking.ship_id == ship_id).all()
+    # Non-denied dockings remain conflicts regardless of clearance status.
+    existing_for_dock = (db.query(Docking)
+                         .filter(Docking.dock_id == dock_id,
+                        Docking.ship_clearance_status != enums.ShipClearanceStatus.DENIED,).all())
+    
+    existing_for_ship = (db.query(Docking)
+                         .filter(Docking.ship_id == ship_id,
+                        Docking.ship_clearance_status != enums.ShipClearanceStatus.DENIED,).all())
 
     now = datetime.now(timezone.utc)
     proposed_arrival = _ensure_aware_utc(arrival)
