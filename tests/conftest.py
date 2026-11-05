@@ -264,3 +264,24 @@ def add_docked_ship(db:Session, make_harbor_with_dock) -> tuple[Harbor,Ship,Dock
         return out
 
     return factory
+
+
+@pytest.fixture
+def docking_ship(db:Session, make_sailing_ship) -> tuple[Ship,Harbor,Dock]:
+    """"""
+    def factory():
+        ship = make_sailing_ship()
+        
+        dock = db.query(Dock).filter(Dock.dock_size <= ship[0].ship_size, Dock.harbor_id == ship[1].id).first()
+        if not dock:
+            raise
+        sev_create_docking(db,payload=DockingCreate(
+                ship_id=ship[0].id,
+                dock_id=dock.id,
+                arrival_date=datetime.datetime.now(datetime.timezone.utc),
+                purpose="pending docking",))
+        
+        return ship[0], ship[1], ship[2]
+
+    return factory 
+
