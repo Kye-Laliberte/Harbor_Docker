@@ -95,9 +95,16 @@ class DockingService:
         # Find an open dock that can accommodate the ship
         open_docks = (
             self.db.query(Dock)
-            .filter(Dock.dock_status == enums.DockStatus.ACTIVE)
-            .filter(Dock.dock_size >= ship.ship_size)
-            .filter(Dock.cargo_capacity >= ship.current_cargo)
+            .filter(Dock.dock_status == enums.DockStatus.ACTIVE,
+            Dock.dock_size >= ship.ship_size,
+            Dock.cargo_capacity >= ship.current_cargo)
+            
+            .filter(Dock.id != self.docking.dock.id,
+            Dock.harbor_id == (
+                self.db.query(Dock.harbor_id)
+                .join(Docking, Dock.id == Docking.dock_id)
+                .filter(Docking.id == self.docking.id)
+                .scalar_subquery()))
             .all())
 
         if not open_docks:
