@@ -128,5 +128,5 @@ class Testship:
         assert respon.status_code == 200
         assert respon.json()["dock_id"] != dock.id
         
-        h = db.query(harbor).filter(Dock.harbor_id == harbor.id).first()
-        assert h.id == dock.harbor_id
+        redirected_dock = db.query(Dock).filter(Dock.id == respon.json()["dock_id"]).first()
+        assert redirected_dock.harbor_id == harbor.id

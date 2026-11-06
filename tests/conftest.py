@@ -281,7 +281,6 @@ def docking_ship(db:Session, make_sailing_ship) -> tuple[Ship,Harbor,Dock]:
                 arrival_date=datetime.datetime.now(datetime.timezone.utc),
                 purpose="pending docking",))
         
-        return ship[0], ship[1], ship[2]
+        return ship[0], ship[1], dock
 
     return factory 
-
